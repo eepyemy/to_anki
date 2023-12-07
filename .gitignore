@@ -1,0 +1,10 @@
+*.sqlite3
+*.json
+*.sqlite
+*.lua
+*.spec
+*.env
+__pycache__
+build
+dict
+dist

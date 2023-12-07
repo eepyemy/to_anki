@@ -1,0 +1,60 @@
+
+[2023-05-26T09:15:44Z][EN]: 10 words, 0 sentences imported.
+[2023-05-26T09:15:44Z][NL]: 8 words, 3 sentences imported.
+[2023-05-26T09:15:44Z][EN]: 10 words, 0 sentences imported.
+[2023-05-26T09:15:44Z][NL]: 8 words, 3 sentences imported.
+[2023-05-26T09:15:44Z][EN]: 10 words, 0 sentences imported.
+[2023-05-26T09:15:44Z][NL]: 8 words, 3 sentences imported.
+[2023-05-26T09:15:44Z][EN]: 10 words, 0 sentences imported.
+[2023-05-26T09:15:44Z][NL]: 8 words, 3 sentences imported.
+[2023-05-26T09:15:44Z][EN]: 10 words, 0 sentences imported.
+[2023-05-26T09:15:44Z][NL]: 8 words, 3 sentences imported.
+[2023-05-26T09:15:44Z][EN]: 10 words, 0 sentences imported.
+[2023-05-26T09:15:44Z][NL]: 8 words, 3 sentences imported.
+[2023-05-26T09:15:44Z][EN]: 0 words, 0 sentences imported.
+[2023-05-26T09:15:44Z][NL]: 0 words, 0 sentences imported.
+[2023-05-27T09:35:59Z][EN]: 2 words, 16 sentences imported.
+[2023-05-27T09:35:59Z][EN]: 2 words, 15 sentences imported.
+[2023-05-27T09:35:59Z][NL]: 483 words, 491 sentences imported.
+[2023-05-26T09:15:44Z][EN]: 10 words, 0 sentences imported.
+[2023-05-26T09:15:44Z][NL]: 8 words, 0 sentences imported.
+[2023-05-26T09:15:44Z][EN]: 0 words, 0 sentences imported.
+[2023-05-26T09:15:44Z][NL]: 0 words, 0 sentences imported.
+[2023-05-26T09:15:44Z][EN]: 0 words, 0 sentences imported.
+[2023-05-26T09:15:44Z][NL]: 0 words, 0 sentences imported.
+[2023-05-26T09:15:44Z][EN]: 0 words, 0 sentences imported.
+[2023-05-26T09:15:44Z][EN]: 0 words, 0 sentences imported.
+[2023-05-26T09:15:44Z][EN]: 0 words, 0 sentences imported.
+[2023-05-26T09:15:44Z][EN]: 0 words, 0 sentences imported.
+[2023-05-26T09:15:44Z][NL]: 0 words, 0 sentences imported.
+[2023-05-26T09:15:44Z][EN]: 0 words, 0 sentences imported.
+[2023-05-26T09:15:44Z][EN]: 0 words, 0 sentences imported.
+[2023-05-26T09:15:44Z][NL]: 0 words, 0 sentences imported.
+[{'notes': '', 'words': '2023-05-26T09:15:44Z'}][EN]: 10 words, 0 sentences imported.
+[{'notes': '2023-05-23T17:38:34Z', 'words': '2023-05-26T09:15:44Z'}][NL]: 8 words, 3 sentences imported.
+[{'notes': '', 'words': '2023-05-26T09:15:44Z'}][EN]: 10 words, 0 sentences imported.
+[{'notes': '2023-05-23T17:38:34Z', 'words': '2023-05-26T09:15:44Z'}][NL]: 8 words, 3 sentences imported.
+[{'notes': '', 'words': '2023-05-26T09:15:44Z'}][EN]: 0 words, 0 sentences imported.
+[{'notes': '', 'words': '2023-05-26T09:15:44Z'}][NL]: 0 words, 0 sentences imported.
+[{'notes': '', 'words': ''}][EN]: 0 words, 0 sentences imported.
+[{'notes': '', 'words': ''}][NL]: 0 words, 0 sentences imported.
+[{'notes': '', 'words': '2023-05-23T17:39:04Z', 'study': ''}][EN]: 10 words, 0 sentences imported.
+[{'notes': '2023-05-23T17:49:11Z', 'words': '2023-05-26T09:15:44Z', 'study': ''}][NL]: 8 words, 4 sentences imported.
+[2023-05-27T16:33:55Z][STUDY]: 3 study questions imported.
+[2023-05-27T16:33:55Z][STUDY]: 3 study questions imported.
+[2023-05-23T17:39:04Z][EN]: 10 words imported.
+[2023-05-26T09:15:44Z][NL]: 8 words imported.
+[2023-05-23T17:49:11Z][NL]: 4 sentences imported.
+[2023-05-27T16:33:55Z][STUDY]: 3 study questions imported.
+[2023-05-23T17:39:04Z][EN]: 10 words imported.
+[2023-05-23T17:39:04Z][EN]: 10 words imported.
+[2023-05-26T09:15:44Z][NL]: 8 words imported.
+[2023-05-23T17:49:11Z][NL]: 4 sentences imported.
+[2023-05-27T16:33:55Z][STUDY]: 3 study questions imported.
+[2023-05-27T09:35:44Z][EN]: 2 words imported.
+[2023-05-27T09:35:59Z][EN]: 2 sentences imported.
+[2023-05-27T09:35:44Z][NL]: 0 words imported.
+[2023-05-27T09:35:59Z][NL]: 0 sentences imported.
+[2023-05-27T19:37:34Z][STUDY]: 1 study questions imported.
+[2023-05-27T19:37:34Z][STUDY]: 1 study questions imported.
+[2023-05-27T20:30:47Z][STUDY]: 4 study questions imported.
