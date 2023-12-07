@@ -1,0 +1,6 @@
+python-dotenv
+luadata
+psutil
+deepl
+googletrans
+pystardict
