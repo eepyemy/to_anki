@@ -172,7 +172,7 @@ class Csv:
   
 # just for debug
 if __name__ == "__main__":
-  k = Json()
+  k = Csv()
   date_10 = datetime.now() - timedelta(days=10)
   date_200 = datetime.now() - timedelta(days=200)
   print(k.get_words(date_200, "nl"))
