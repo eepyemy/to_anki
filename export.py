@@ -12,7 +12,20 @@ from glob import glob
 from pystardict import Dictionary
 import traceback
 
+def str_to_date(str):
+  return datetime.strptime(str, '%Y-%m-%dT%H:%M:%SZ')
 
+def ms_to_date(ms):
+  return datetime.fromtimestamp(int(ms))
+
+def ms_to_str(ms):
+  return date_to_str(ms_to_date(ms))
+
+def date_to_ms(date):
+  return date.timestamp()
+
+def date_to_str(date, ms_timestamp=True):
+  return date.strftime("%Y-%m-%dT%H:%M:%SZ")
 
 PROPERTIES={}
 if not os.path.exists("PROPERTIES.env"):
@@ -26,10 +39,6 @@ with open("PROPERTIES.env", "r", encoding="utf-8") as f:
 
 print(PROPERTIES)
 
-
-
-def str_to_date(str):
-  return datetime.strptime(str, '%Y-%m-%dT%H:%M:%SZ')
 
 def get_param(param_name, default=None):
   return PROPERTIES.get(param_name, default)
@@ -157,42 +166,27 @@ def main():
   #print(sorted_dicts)
   dicts = sorted_dicts
   
-  last_time = {}
-  try:
-    with open("last_sync.json", "r", encoding="utf-8") as f:
-      last_time = json.load(f)
-  except:
-    pass#print("No file last_sync.json....")
+  sync_dates = get_sync_dates()
   
-  dates = []
+  
   for lang in FROM_LANGS:
     print()
     print(f"Exporting from {lang} language...")
     print()
-    dates.append(export_lang(device, lang))
+    sync_dates.extend(export_lang(device, lang))
 
   print()
   print(f"Exporting study questions...")
   print()
-  study_date = ""
-  study_date = export_study(device)
-  if study_date:
-    last_time['study'] = study_date
-  dates_notes = [x.get('notes') for x in dates if x.get('notes',"")!=""]
-  dates_words = [x.get('words') for x in dates if x.get('words',"")!=""]
-  print(dates_notes, dates_words)
-  if dates_notes:
-    last_time_notes = max(dates_notes, key=lambda x: str_to_date(x))
-    last_time['notes'] = last_time_notes
-  if dates_words:
-    last_time_words = max(dates_words, key=lambda x: str_to_date(x))
-    last_time['words'] = last_time_words
-  if not last_time:
-    last_time = {}
-  print("saving", last_time)
-  with open("last_sync.json", "w") as k:
-    json.dump(last_time, k)
-    print("saving last sync date...")
+  
+  sync_dates.extend(export_study(device))
+  
+  # print(sync_dates)
+  sync_dates = list(set(sync_dates))
+  
+  print("saving sync dates")
+  with open("sync_dates.json", "w") as k:
+    json.dump(sync_dates, k)
   
   try:
     if not USE_GOOGLE:
@@ -216,7 +210,7 @@ def translate(text, from_lang):
       print("Out of limit.")
       return None
     else:
-      return "[DeepL]:"+translator.translate_text(text, target_lang=TO_LANG, source_lang=from_lang.upper(), formality="less").text
+      return "[DeepL]:"+translator.translate_text(text, target_lang=TO_LANG, source_lang=from_lang.upper()).text
 
 # generate words from dicts or from google translate if dicts are not available
 def generate(words, lang, import_words_to):
@@ -252,38 +246,20 @@ def generate(words, lang, import_words_to):
   ids = anki_connect.invoke("addNotes", notes=notes)
 
 def export_study(device):
-  
+  sync_dates = []
   if not check_reqs(["STUDY_FRONT_FIELD", "STUDY_BACK_FIELD", "STUDY_MODEL_NAME"], raise_error=False):
-    return ""
+    return []
 
   if type(device).__name__ != "Koreader" or "STUDY" not in PROPERTIES:
-    return ""
+    return []
   
   device.connect()
-  
-  last_sync = ""
-  try:
-    with open("last_sync.json", "r", encoding="utf-8") as f:
-      last_sync = json.load(f)
-  except:
-    print("No file last_sync.json....")
-  
 
-  if last_sync == "":
-    sync_all = True
-    study_from_date = datetime(1970, 1, 1, 1, 1, 1, 1)
-  else:
-    sync_all = False
-    study_from_date = last_sync.get("study")
+  print(f"syncing all study questions...")
   
-    if study_from_date:
-      study_from_date = str_to_date(study_from_date)
-    else:
-      study_from_date = datetime(1970, 1, 1, 1, 1, 1, 1)
-
-  print(f"syncing all study questions... from {study_from_date}")
+  notes,notes_dates = device.get_notes("STUDY")
+  notes,notes_dates = get_new_items(notes, notes_dates)
   
-  notes = device.get_notes(study_from_date, "STUDY", study=True)
   notes = [[x[1], x[0], x[2]] for x in notes if x[1] != None and x[1].strip() != '']
   print(f"Got {len(notes)} study questions...")
   
@@ -314,19 +290,19 @@ def export_study(device):
     
     ids = anki_connect.invoke("addNotes", notes=notes)
 
-    date = device.get_latest_date().get("study")
-    if date:
-      last_sync = date
+    
+    notes_dates = [ms_to_str(x) for x in notes_dates]
+    sync_dates.extend(notes_dates)
     
     device.close()
 
     with open("history.txt", "a") as f:
-      if last_sync:
-        f.write(f"\n[{last_sync}][STUDY]: {len(ids)} study questions imported.")
-    return last_sync
+      if ids:
+        f.write(f"\n[{sync_dates[0]}][STUDY]: {len(ids)} study questions imported.")
+  return sync_dates
 
 def export_lang(device, lang):
-
+  sync_dates = []
   check_reqs(["WORD_FRONT_FIELD", "WORD_BACK_FIELD", "WORD_MODEL_NAME", "NOTE_FRONT_FIELD", "NOTE_BACK_FIELD", "NOTE_MODEL_NAME"])
 
   device.connect()
@@ -337,39 +313,15 @@ def export_lang(device, lang):
   anki_connect.invoke("createDeck", deck=import_notes_to)
   anki_connect.invoke("createDeck", deck=import_words_to)
   
-  last_sync = {}
-  try:
-    with open("last_sync.json", "r", encoding="utf-8") as f:
-      last_sync = json.load(f)
-  except:
-    print("No file last_sync.json....")
-  
 
-  if not last_sync:
-    sync_all = True
-    notes_from_date = datetime(1970, 1, 1, 1, 1, 1, 1)
-    words_from_date = datetime(1970, 1, 1, 1, 1, 1, 1)
-  else:
-    sync_all = False
-
-    notes_from_date = last_sync.get("notes")
-    words_from_date = last_sync.get("words")
-
-    if notes_from_date:
-      notes_from_date = str_to_date(notes_from_date)
-    else:
-      notes_from_date = datetime(1970, 1, 1, 1, 1, 1, 1)
-    
-    if words_from_date:
-      words_from_date = str_to_date(words_from_date)
-    else:
-      words_from_date = datetime(1970, 1, 1, 1, 1, 1, 1)
+  print(f"syncing all words...")
+  words, words_dates = device.get_words(FROM_LANG)
+  words, words_dates = get_new_items(words, words_dates)
   
-  print(f"syncing all notes... from {notes_from_date}")
-  print(f"syncing all words... from {words_from_date}")
+  print(f"syncing all notes...")
+  notes, notes_dates = device.get_notes(FROM_LANG)
+  notes, notes_dates = get_new_items(notes, notes_dates)
   
-  words = device.get_words(words_from_date, FROM_LANG)
-  notes = device.get_notes(notes_from_date, FROM_LANG)
   notes = [[x[0], translate(x[0], lang)] for x in notes if x[1] == None or x[1].strip() == '']
 
   
@@ -464,22 +416,45 @@ def export_lang(device, lang):
 
     ids = anki_connect.invoke("addNotes", notes=notes)
   len_sentences = len(ids)
-  latest_date = device.get_latest_date()
-  latest_date = {x:y for x,y in latest_date.items() if y}
-  last_sync.update(latest_date)
-  print(latest_date)
-  
-  
-  
   device.close()
 
+  sync_dates = []
+  words_dates = [ms_to_str(x) for x in words_dates]
+  notes_dates = [ms_to_str(x) for x in notes_dates]
+  sync_dates.extend(words_dates)
+  sync_dates.extend(notes_dates)
+  
+  
   with open("history.txt", "a") as f:
-    if last_sync.get('words'):
-      f.write(f"\n[{last_sync.get('words')}][{lang}]: {len_words} words imported.")
-    if last_sync.get('notes'):
-      f.write(f"\n[{last_sync.get('notes')}][{lang}]: {len_sentences} sentences imported.")
-  return last_sync
+    if len_sentences:
+      f.write(f"\n[{notes_dates[0]}][{lang}]: {len_sentences} sentences imported.")
+    if len_words:
+      f.write(f"\n[{words_dates[0]}][{lang}]: {len_words} words imported.")
+  
+  return sync_dates
 
+def get_sync_dates():
+  sync_dates = []
+  try:
+    with open("sync_dates.json", "r", encoding="utf-8") as f:
+      sync_dates = json.load(f)
+  except:
+    print("No file sync_dates.json....")
+  
+  return sync_dates
+
+def get_new_items(l, dates, to_str_delegate=ms_to_str):
+  new_items = None
+  if len(l) != len(dates):
+    print("not enought dates for the values provided!")
+  else:
+    sync = get_sync_dates()
+    item_dates = [(l[i], x) for i,x in enumerate(dates) if to_str_delegate(x) not in sync]
+    new_items = [x[0] for x in item_dates]
+    new_dates = [x[1] for x in item_dates]
+    new_dates = sorted(new_dates)
+  return new_items, new_dates
+    
 
 if __name__ == "__main__":
   try:
