@@ -128,7 +128,7 @@ class Koreader:
             continue  
           shutil.copyfile(path, to_file)
           #time.sleep(10)
-      connect = self.connect
+      connect = self.connect()
       self.close()
       if connect:
         break
@@ -183,9 +183,6 @@ class Koreader:
       self.books = {x[1]:x[0] for x in books}
       books_info.close()
     
-    self.__notes_latest_date = ""
-    self.__words_latest_date = ""
-    self.__study_latest_date = ""
     
   #  opens db connection
   def connect(self):
@@ -285,7 +282,7 @@ class Koreader:
     return words
   
   # query db for all saved notes, omit those that are not in target lang
-  def get_notes(self, from_date, lang=None, study=False) -> list:
+  def get_notes(self, lang=None) -> list:
     if lang is not None:
       lang = lang.upper().split("-")[0].split('_')[0]
       if lang not in self.PROPERTIES:
@@ -311,7 +308,7 @@ class Koreader:
     if not self.__notes_data:
       return []
     
-    # json -> Text, Annotation, Time created (if lang | and time is greater than latest update)
+    # json -> Text, Annotation, Time created (if lang)
     all_notes = []
     if 'documents' not in self.__notes_data:
       self.__notes_data = {'documents':[self.__notes_data]}
@@ -327,8 +324,6 @@ class Koreader:
         if "note" in entry:
           note = entry["note"]
 
-        if ms_to_date(time_created)<=from_date:
-          continue
         all_notes.append((text, note, time_created, filepath))
 
     # Sort by time
@@ -341,36 +336,12 @@ class Koreader:
     if len(all_notes)==0:
       return []
 
-    latest_date_str = max(dates)
-    latest_date_str = ms_to_date(latest_date_str)
-    latest_date_str = date_to_str(latest_date_str)
-
-    if not study:
-    
-      if self.__notes_latest_date == "":
-        self.__notes_latest_date = latest_date_str
-
-      if str_to_date(latest_date_str) > str_to_date(self.__notes_latest_date):
-        self.__notes_latest_date = latest_date_str
-    
-    if study:
-      if self.__study_latest_date == "":
-        self.__study_latest_date = latest_date_str
-
-      if str_to_date(latest_date_str) > str_to_date(self.__study_latest_date):
-        self.__study_latest_date = latest_date_str
-
-    return all_notes
+    return all_notes, dates
   
 # just for debug
 if __name__ == "__main__":
   k = Koreader()
-  date_10 = datetime.now() - timedelta(days=10)
-  date_200 = datetime.now() - timedelta(days=200)
-  print(k.get_words(date_200, "nl"))
-  print(k.get_notes(date_200, "Nl"))
-  print(k.get_words(date_200, "EN"))
-  print(k.get_notes(date_200, "en"))
-  
-  
+  print(k.get_notes("RU"))
+  print(k.get_notes("ES"))
+  print(k.get_notes("Study"))
   
