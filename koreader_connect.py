@@ -182,7 +182,7 @@ class Koreader:
       books = books_info.cursor().execute("SELECT directory, title FROM bookinfo")
       self.books = {x[1]:x[0] for x in books}
       books_info.close()
-    
+
     
   #  opens db connection
   def connect(self):
@@ -218,17 +218,15 @@ class Koreader:
       self.__con.close()
       self.__is_connected = False
 
-  def get_latest_date(self):
-    return {"notes":self.__notes_latest_date, "words":self.__words_latest_date, "study":self.__study_latest_date}
-
   # safe query vocab db
   def __query(self, command):
     if self.__is_connected:
       return self.cur.execute(command)
     else:
       return []
+    
   # query db for all saved words, omit those that are not in target lang
-  def get_words(self, from_date, lang=None) -> list:
+  def get_words(self, lang=None) -> list:
     #print("lang selection is not working for now, come later for this")
 
     # check if word is from lang book
@@ -261,25 +259,13 @@ class Koreader:
 
 
     # get words that are older than form_date
-    words = [x[0].lower() for x in all_words if lang_check_func(x[2], lang) and ms_to_date(x[1])>from_date]
-    dates = [x[1] for x in all_words if lang_check_func(x[2], lang) and ms_to_date(x[1])>from_date]
+    words = [x[0].lower() for x in all_words if lang_check_func(x[2], lang)]
+    dates = [x[1] for x in all_words if lang_check_func(x[2], lang)]
     
     if len(words)==0:
       return []
-    
-    # save it in conventional time stamp format
-    latest_date_str = max(dates, key=lambda x:ms_to_date(x))
-    latest_date_str = ms_to_date(latest_date_str)
-    latest_date_str = date_to_str(latest_date_str)
 
-    # update latest_date_str if new date is older or previous date didnt exist
-    if self.__words_latest_date == "":
-      self.__words_latest_date = latest_date_str
-
-    if str_to_date(latest_date_str) > str_to_date(self.__words_latest_date):
-      self.__words_latest_date = latest_date_str
-
-    return words
+    return words, dates
   
   # query db for all saved notes, omit those that are not in target lang
   def get_notes(self, lang=None) -> list:
@@ -344,4 +330,8 @@ if __name__ == "__main__":
   print(k.get_notes("RU"))
   print(k.get_notes("ES"))
   print(k.get_notes("Study"))
+  
+  # k.connect()
+  print(k.get_words("RU"))
+  print(k.get_words("ES"))
   
