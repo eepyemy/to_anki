@@ -1,5 +1,4 @@
 import sqlite3
-from datetime import datetime, timedelta
 import os
 import shutil
 import json
@@ -7,19 +6,9 @@ import glob
 import psutil
 from functools import reduce
 import luadata
+from utility_funcs import *
 
 
-def str_to_date(str):
-  return datetime.strptime(str, '%Y-%m-%dT%H:%M:%SZ')
-
-def ms_to_date(ms):
-  return datetime.fromtimestamp(int(ms))
-
-def date_to_ms(date):
-  return date.timestamp()
-
-def date_to_str(date, ms_timestamp=True):
-  return date.strftime("%Y-%m-%dT%H:%M:%SZ")
 VOCAB_FILENAME = "vocabulary_builder.sqlite3"
 BOOKS_INFO_FILENAME="bookinfo_cache.sqlite3"
 NOTES_FILENAME = "notes.json"
@@ -331,7 +320,8 @@ if __name__ == "__main__":
   print(k.get_notes("ES"))
   print(k.get_notes("Study"))
   
-  # k.connect()
+  k.connect()
   print(k.get_words("RU"))
   print(k.get_words("ES"))
+  k.close()
   
