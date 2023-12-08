@@ -77,10 +77,6 @@ class Csv:
   # query db for all saved words, omit those that are not in target lang
   def get_words(self, lang=None) -> list:
     #print("lang selection is not working for now, come later for this")
-    if lang is not None:
-      lang = lang.upper().split("-")[0].split('_')[0]
-      if lang not in self.PROPERTIES:
-        print("there is no folder in self.properties set to detect lang")
 
     def lang_check_func(lang_):
       if lang_ is None:
@@ -115,10 +111,6 @@ class Csv:
   
   # query db for all saved notes, omit those that are not in target lang
   def get_notes(self, lang=None) -> list:
-    if lang is not None:
-      lang = lang.upper().split("-")[0].split('_')[0]
-      if lang not in self.PROPERTIES:
-        print("there is no folder in self.properties set to detect lang")
 
     def lang_check_func(lang_):
       if lang_ is None:
