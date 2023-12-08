@@ -1,26 +1,15 @@
-from datetime import datetime, timedelta
+from datetime import datetime
 import os
-import json
 from functools import reduce
 import csv
+from utility_funcs import *
 
-def str_to_date(str):
-  return datetime.strptime(str, '%Y-%m-%dT%H:%M:%SZ')
-
-def ms_to_date(ms):
-  return datetime.fromtimestamp(int(ms))
-
-def date_to_ms(date):
-  return date.timestamp()
-
-def date_to_str(date, ms_timestamp=True):
-  return date.strftime("%Y-%m-%dT%H:%M:%SZ")
 
 CSV_FILENAME="bulk_export.csv"
 #shutil.copyfile(src, dst)
 
 class Csv:
- 
+
   # checks if there is all data that is needed
   def __has_needed_data(self, scope="all"):
     result = False
@@ -43,10 +32,7 @@ class Csv:
     self.__notes_data = []
     self.__download_dicts = download_dicts
     #self.connect()
-    self.books = {}   
-    self.__notes_latest_date = ""
-    self.__words_latest_date = ""
-    self.__study_latest_date = ""
+    self.books = {}
     
   #  opens db connection
   def connect(self):
@@ -63,43 +49,59 @@ class Csv:
         print(f"Couldn't open {CSV_FILENAME}...",e)
   
     else:
-      print(f"[{CSV_FILENAME}] error, couldn't find json file")
+      print(f"[{CSV_FILENAME}] error, couldn't find csv file")
       failed = True
 
     return not failed
-      
 
   # closes db connection 
   def close(self):
     if self.__is_connected:
       self.__is_connected = False
 
-  def get_latest_date(self):
-    return {"notes":self.__notes_latest_date, "words":self.__words_latest_date, "study":self.__study_latest_date}
-
   # safe query vocab db
   def __query(self, lang, type):
     if self.__is_connected:
-      if type=="words":
-        if isinstance(self.__data, list):
-          return [x[int(self.PROPERTIES.get("CSV_FIELD",0))] for x in self.__data if len(x[0].strip().split())==1]
-      elif type=="notes":
-        if isinstance(self.__data, list):
-          return [x[int(self.PROPERTIES.get("CSV_FIELD",0))] for x in self.__data if len(x[0].strip().split())>1]
+      main = int(self.PROPERTIES.get("CSV_FIELD",0))
+      langf = int(self.PROPERTIES.get("CSV_FIELD",1))
+      if isinstance(self.__data, list):
+        if type=="words":
+          # (x[langf:langf+1] or [lang])[0] = safe list.get(index) with default lang
+          return [(x[main],(x[langf:langf+1] or [None])[0]) for x in self.__data if len(x[0].strip().split())==1]
+        elif type=="notes":
+          return [(x[main],(x[langf:langf+1] or [None])[0]) for x in self.__data if len(x[0].strip().split())>1]
       return []
     else:
       return []
+  
   # query db for all saved words, omit those that are not in target lang
-  def get_words(self, from_date, lang=None) -> list:
+  def get_words(self, lang=None) -> list:
     #print("lang selection is not working for now, come later for this")
+    if lang is not None:
+      lang = lang.upper().split("-")[0].split('_')[0]
+      if lang not in self.PROPERTIES:
+        print("there is no folder in self.properties set to detect lang")
 
+    def lang_check_func(lang_):
+      if lang_ is None:
+        return True
+      
+      # normilize lang_
+      lang_ = lang_.upper().split("-")[0].split('_')[0]
+      if lang_ not in self.PROPERTIES:
+        return False
+      
+      return lang_ == lang
+      
+    
     if not self.__is_connected:
       print("There is no DB for words, returning empty array")
-      return []
+      return [], []
     
     # get words in discdending order
     all_words = self.__query(lang,"words")
-    all_words = list(all_words)
+    # print(all_words)
+    all_words = list([word for word, lang_ in all_words if lang_check_func(lang_)])
 
 
     # get words that are older than form_date
@@ -107,78 +109,55 @@ class Csv:
     dates = [datetime.now().timestamp() for x in all_words]
     
     if len(words)==0:
-      return []
-    
-    # save it in conventional time stamp format
-    latest_date_str = max(dates, key=lambda x:ms_to_date(x))
-    latest_date_str = ms_to_date(latest_date_str)
-    latest_date_str = date_to_str(latest_date_str)
+      return [], []
 
-    # update latest_date_str if new date is older or previous date didnt exist
-    if self.__words_latest_date == "":
-      self.__words_latest_date = latest_date_str
-
-    if str_to_date(latest_date_str) > str_to_date(self.__words_latest_date):
-      self.__words_latest_date = latest_date_str
-
-    return words
+    return words, dates
   
   # query db for all saved notes, omit those that are not in target lang
-  def get_notes(self, from_date, lang=None, study=False) -> list:
+  def get_notes(self, lang=None) -> list:
     if lang is not None:
       lang = lang.upper().split("-")[0].split('_')[0]
       if lang not in self.PROPERTIES:
         print("there is no folder in self.properties set to detect lang")
 
+    def lang_check_func(lang_):
+      if lang_ is None:
+        return True
+      
+      # normilize lang_
+      lang_ = lang_.upper().split("-")[0].split('_')[0]
+      if lang_ not in self.PROPERTIES:
+        return False
+      
+      return lang_ == lang
     
     #print("lang selection is not working for now, come later for this")
 
     # check if have data
     if not self.__is_connected:
-      return []
+      return [], []
     
     # json -> Text, Annotation, Time created (if lang | and time is greater than latest update)
     all_notes = self.__query(lang, "notes")
     # Sort by time
     # all_notes = sorted(all_notes, key=lambda x: int(x[2]))
     
-
+    # print(all_notes)
     dates = [datetime.now().timestamp() for x in all_notes]
-    all_notes = [(x, "") for x in all_notes]
+    all_notes = [(x, "") for x,lang_ in all_notes if lang_check_func(lang_)]
     
     if len(all_notes)==0:
-      return []
+      return [], []
 
-    latest_date_str = max(dates)
-    latest_date_str = ms_to_date(latest_date_str)
-    latest_date_str = date_to_str(latest_date_str)
-
-    if not study:
-    
-      if self.__notes_latest_date == "":
-        self.__notes_latest_date = latest_date_str
-
-      if str_to_date(latest_date_str) > str_to_date(self.__notes_latest_date):
-        self.__notes_latest_date = latest_date_str
-    
-    if study:
-      if self.__study_latest_date == "":
-        self.__study_latest_date = latest_date_str
-
-      if str_to_date(latest_date_str) > str_to_date(self.__study_latest_date):
-        self.__study_latest_date = latest_date_str
-
-    return all_notes
+    return all_notes, dates
   
 # just for debug
 if __name__ == "__main__":
   k = Csv()
-  date_10 = datetime.now() - timedelta(days=10)
-  date_200 = datetime.now() - timedelta(days=200)
-  print(k.get_words(date_200, "nl"))
-  print(k.get_notes(date_200, "Nl"))
-  print(k.get_words(date_200, "EN"))
-  print(k.get_notes(date_200, "en"))
-  
-  
-  
+  k.connect()
+  print(k.get_notes("RU"))
+  print(k.get_notes("ES"))
+  print(k.get_notes("Study"))
+  print(k.get_words("RU"))
+  print(k.get_words("ES"))
+  k.close()
