@@ -3,14 +3,7 @@ from datetime import datetime
 import os, string
 import shutil
 import psutil
-
-def str_to_date(str, m=False):
-  if m:
-    return datetime.strptime(str, "%Y-%m-%dT%H:%M:%S.%f")
-  else:
-    return datetime.strptime(str, '%Y-%m-%dT%H:%M:%SZ')
-def date_to_str(date):
-  return date.strftime("%Y-%m-%dT%H:%M:%SZ")
+from utility_funcs import *
 
 
 #shutil.copyfile(src, dst)
@@ -97,12 +90,12 @@ class Kobo:
     all_words = list(all_words)
 
     words = [word for word,_,lang_,_ in all_words if lang_check_func(lang_,lang)]
-    dates = [date for _,_,lang_,date in all_words if lang_check_func(lang_,lang)]
+    dates = [date_to_ms(str_to_date(date)) for _,_,lang_,date in all_words if lang_check_func(lang_,lang)]
     
     if len(words)==0:
       return [], []
 
-    return words
+    return words, dates
   
   def get_notes(self, lang):
     def lang_check_func(data, lang=None):
@@ -136,9 +129,19 @@ class Kobo:
       if lang_check_func(lang,book_lang):
         if text:
           notes.append([text, annotation])
-          dates.append(date)
+          dates.append(date_to_ms(str_to_date(date)))
     
     if len(notes)==0:
       return [], []
 
     return notes, dates
+  
+if __name__ == "__main__":
+  k = Kobo()
+  k.connect()
+  print(k.get_notes("NL"))
+  #print(k.get_notes("RU"))
+  #print(k.get_notes("Study"))
+  #print(k.get_words("RU"))
+  #print(k.get_words("NL"))
+  k.close()
