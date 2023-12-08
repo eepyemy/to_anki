@@ -1,6 +1,5 @@
 import json
 import os
-from datetime import datetime
 import anki_connect
 import kobo_connect
 import koreader_connect
@@ -8,8 +7,6 @@ import json_connect, csv_connect
 import deepl
 import copy
 from googletrans import Translator
-from glob import glob
-from pystardict import Dictionary
 import traceback
 from utility_funcs import *
 from init import *
@@ -46,44 +43,7 @@ def main():
     print("No language properties are set, need at least one language. Aborting")
     return None
 
-  if not os.path.exists("custom_dicts_order.json"):
-    with open("custom_dicts_order.json", "w", encoding="utf-8") as f:
-      json.dump({os.path.basename(x):0 for x in get_dicts()}, f)
-
-  custom_dicts_order = {}
-  with open("custom_dicts_order.json", "r", encoding="utf-8") as f:
-    custom_dicts_order = json.load(f)
-  custom_dicts_order = {f"{x}.ifo" if x.split(".")[-1]!="ifo" else x : y for x,y in custom_dicts_order.items()}
-  custom_dicts_order = {x:y for x,y in custom_dicts_order.items() if y!=0}
-
-  with open("custom_dicts_order.json", "w", encoding="utf-8") as f:
-    a = {os.path.basename(x):0 for x in get_dicts()}
-    a.update(custom_dicts_order)
-    json.dump(a, f)
-
-  #print(custom_dicts_order)
-  DICTS = get_dicts()
-  #print(dicts)
-  DICTS = {os.path.basename(x):Dictionary(x[:-4]) for x in DICTS}
-  dicts_order = device.get_dict_order()
-  dicts_order = {os.path.basename(x):y for x,y in dicts_order.items()}
-  dicts_order.update(custom_dicts_order)
-
-  #print(dicts_order)
-  if dicts_order or DICTS:
-    temp_len = max(list(dicts_order.values())+[len(DICTS)])
-  else:
-    temp_len = 0
-  sorted_dicts = [1]*temp_len
-  for dn,d in DICTS.items():
-    place = dicts_order.get(dn)
-    if not place:
-      sorted_dicts.append(d)
-      continue
-    sorted_dicts[place-1] = d
-  sorted_dicts = [x for x in sorted_dicts if isinstance(x, Dictionary)]
-  #print(sorted_dicts)
-  DICTS = sorted_dicts
+  DICTS = load_dicts_ordered(device)
   
   sync_dates = get_sync_dates()
   
@@ -100,7 +60,7 @@ def main():
   
   sync_dates.extend(export_study(device))
   
-  # print(sync_dates)
+  # drop ununique dates
   sync_dates = list(set(sync_dates))
   
   print("saving sync dates")
@@ -253,10 +213,10 @@ def export_lang(device, lang):
   # list -> (note, translation)
   notes = [[x[0], translate(x[0], lang)] for x in notes if x[1] == None or x[1].strip() == '']
 
-  update_prev_translations([x[1] for x in notes])
+  update_prev_translations()
 
   # print(notes)
-  len_words = add_words(words, IMPORT_WORDS_FROM, import_notes_to, lang)
+  len_words = add_words(words, IMPORT_WORDS_FROM, import_words_to, lang)
   
   print(f"Got {len(notes)} notes...")  
   len_sentences = add_notes(notes, import_notes_to)
@@ -339,6 +299,7 @@ def add_words(words, from_, to_, lang):
 
 # logic of adding notes to anki decks
 def add_notes(notes, to_):
+  ids = []
   if len(notes)>0:
     fields = anki_connect.invoke("modelFieldNames", modelName=NOTE_MODEL_NAME)
     ids = []
@@ -355,8 +316,10 @@ def add_notes(notes, to_):
       note['fields'][NOTE_FRONT_FIELD] = note1[0]
       note['fields'][NOTE_BACK_FIELD] = note1[1]
       notes[i] = note
-
+    
     ids = anki_connect.invoke("addNotes", notes=notes)
+  if not ids:
+    ids = []
   return len(ids)
 
 # loads all dates that were synced

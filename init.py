@@ -1,6 +1,7 @@
 import os
 from glob import glob
 import json 
+from pystardict import Dictionary
 
 PROPERTIES={}
 if not os.path.exists("PROPERTIES.env"):
@@ -81,5 +82,47 @@ def update_prev_translations(notes={}):
   PREV_TRANSLATIONS.update(dict(notes))
   with open("translations.json", "w", encoding="utf-8") as f:
     json.dump(PREV_TRANSLATIONS, f)
+
+def load_dicts_ordered(device):
+  global DICTS
+  if not os.path.exists("custom_dicts_order.txt"):
+    with open("custom_dicts_order.txt", "w", encoding="utf-8") as f:
+      f.writelines([f"{os.path.basename(x)}\n" for x in get_dicts()])
+
+  custom_dicts_order = {}
+  with open("custom_dicts_order.txt", "r", encoding="utf-8") as f:
+    custom_dicts_order = {x:i+1 for i,x in enumerate(f.read().split())}
+  custom_dicts_order = {f"{x}.ifo" if x.split(".")[-1]!="ifo" else x : y for x,y in custom_dicts_order.items()}
+  custom_dicts_order = {x:y for x,y in custom_dicts_order.items() if y!=0}
+
+  with open("custom_dicts_order.txt", "w", encoding="utf-8") as f:
+    a = {os.path.basename(x):0 for x in get_dicts()}
+    a.update(custom_dicts_order)
+    a = sorted(a.items(), key=lambda x: x[1])
+    a = [f"{x[0]}\n" for x in a]
+    f.writelines(a)
+
+  #print(custom_dicts_order)
+  DICTS = get_dicts()
+  #print(dicts)
+  DICTS = {os.path.basename(x):Dictionary(x[:-4]) for x in DICTS}
+  dicts_order = device.get_dict_order()
+  dicts_order = {os.path.basename(x):y for x,y in dicts_order.items()}
+  dicts_order.update(custom_dicts_order)
+
+  #print(dicts_order)
+  if dicts_order or DICTS:
+    temp_len = max(list(dicts_order.values())+[len(DICTS)])
+  else:
+    temp_len = 0
+  sorted_dicts = [1]*temp_len
+  for dn,d in DICTS.items():
+    place = dicts_order.get(dn)
+    if not place:
+      sorted_dicts.append(d)
+      continue
+    sorted_dicts[place-1] = d
+  sorted_dicts = [x for x in sorted_dicts if isinstance(x, Dictionary)]
+  return sorted_dicts
 
 update_prev_translations()
