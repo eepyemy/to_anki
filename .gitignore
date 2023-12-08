@@ -9,3 +9,4 @@ build
 dict
 dist
 *.txt
+*.csv
