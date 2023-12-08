@@ -57,8 +57,6 @@ class Kobo:
   def __init__(self):
     self.__is_connected = False
     self.__backup_db(os.path.join(os.getcwd(),"KoboReader.sqlite"))
-    self.__notes_latest_date = ""
-    self.__words_latest_date = ""
 
   def close(self):
     if self.__is_connected:
@@ -80,10 +78,7 @@ class Kobo:
     else:
       return []
 
-  def get_latest_date(self):
-    return {"notes":self.__notes_latest_date, "words":self.__words_latest_date}
-
-  def get_words(self, from_date, lang):
+  def get_words(self, lang):
     def lang_check_func(data, lang=None):
       if lang is None:
         return True
@@ -92,31 +87,24 @@ class Kobo:
       data = data.upper().strip("-").split("-")[0].split('_')[0]
       lang = lang.upper().strip("-").split("-")[0].split('_')[0]
 
-      if data==lang:
-        return True
-      else:
-        return False
+      return data == lang
+
+    if not self.__is_connected:
+      print("There is no DB for words, returning empty array")
+      return [], []
 
     all_words = self.__query("SELECT * FROM WordList ORDER BY DateCreated")
     all_words = list(all_words)
 
-
-    words = [x[0] for x in all_words if lang_check_func(x[2],lang) and str_to_date(x[3])>from_date]
-    dates = [x[3] for x in all_words if lang_check_func(x[2],lang) and str_to_date(x[3])>from_date]
+    words = [word for word,_,lang_,_ in all_words if lang_check_func(lang_,lang)]
+    dates = [date for _,_,lang_,date in all_words if lang_check_func(lang_,lang)]
     
     if len(words)==0:
-      return []
-    
-    latest_date = max(dates, key=lambda x:str_to_date(x))
-    if self.__words_latest_date == "":
-      self.__words_latest_date = latest_date
-
-    if str_to_date(latest_date) > str_to_date(self.__words_latest_date):
-      self.__words_latest_date = latest_date
+      return [], []
 
     return words
   
-  def get_notes(self, from_date, lang):
+  def get_notes(self, lang):
     def lang_check_func(data, lang=None):
       if lang is None:
         return True
@@ -125,18 +113,19 @@ class Kobo:
       data = data.upper().strip("-").split("-")[0].split('_')[0]
       lang = lang.upper().strip("-").split("-")[0].split('_')[0]
       
-      if data==lang:
-        return True
-      else:
-        return False
+      return data == lang
 
+    if not self.__is_connected:
+      print("There is no DB for notes, returning empty array")
+      return [], []
+    
     all_notes = list(self.__query("SELECT Text, Annotation, VolumeID, DateModified FROM Bookmark ORDER BY DateCreated"))
     #print(all_notes)
 
     
 
     content_dict = {}
-    content_dict = {x[0]: x[1] for x in self.__query("SELECT ContentID, SelectedDictionary FROM content_settings")}
+    content_dict = {id:d for id,d in self.__query("SELECT ContentID, SelectedDictionary FROM content_settings")}
     #print(content_dict)
     notes = []
     dates = []
@@ -144,21 +133,12 @@ class Kobo:
       book_lang = content_dict.get(content_id)
       if not book_lang:
         continue
-      if lang_check_func(lang,book_lang) and str_to_date(date)>from_date:
+      if lang_check_func(lang,book_lang):
         if text:
           notes.append([text, annotation])
           dates.append(date)
     
     if len(notes)==0:
-      return []
+      return [], []
 
-    latest_date = max(dates, key=lambda x:str_to_date(x))
-
-    if self.__notes_latest_date == "":
-      self.__notes_latest_date = latest_date
-
-    if str_to_date(latest_date) > str_to_date(self.__notes_latest_date):
-      self.__notes_latest_date = latest_date
-  
-
-    return notes
+    return notes, dates
