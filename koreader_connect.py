@@ -238,7 +238,7 @@ class Koreader:
     
     if not self.__is_connected:
       print("There is no DB for words, returning empty array")
-      return []
+      return [], []
     
     # get words in discdending order
     all_words = self.__query("SELECT word, create_time, title_id FROM vocabulary ORDER BY create_time")
@@ -250,7 +250,7 @@ class Koreader:
     dates = [x[1] for x in all_words if lang_check_func(x[2], lang)]
     
     if len(words)==0:
-      return []
+      return [], []
 
     return words, dates
   
@@ -279,7 +279,7 @@ class Koreader:
 
     # check if have data
     if not self.__notes_data:
-      return []
+      return [], []
     
     # json -> Text, Annotation, Time created (if lang)
     all_notes = []
@@ -307,7 +307,7 @@ class Koreader:
     all_notes = [(x[0], x[1], x[3]) for x in all_notes]
     
     if len(all_notes)==0:
-      return []
+      return [], []
 
     return all_notes, dates
   
