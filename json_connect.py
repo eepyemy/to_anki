@@ -2,19 +2,7 @@ from datetime import datetime, timedelta
 import os
 import json
 from functools import reduce
-
-
-def str_to_date(str):
-  return datetime.strptime(str, '%Y-%m-%dT%H:%M:%SZ')
-
-def ms_to_date(ms):
-  return datetime.fromtimestamp(int(ms))
-
-def date_to_ms(date):
-  return date.timestamp()
-
-def date_to_str(date, ms_timestamp=True):
-  return date.strftime("%Y-%m-%dT%H:%M:%SZ")
+from utility_funcs import *
 
 JSON_FILENAME="bulk_export.json"
 #shutil.copyfile(src, dst)
@@ -82,6 +70,7 @@ class Json:
       return []
     else:
       return []
+  
   # query db for all saved words, omit those that are not in target lang
   def get_words(self, lang=None) -> list:
     #print("lang selection is not working for now, come later for this")
