@@ -170,7 +170,7 @@ def generate_cards(words, lang, import_words_to):
 
   ids = anki_connect.invoke("addNotes", notes=notes)
 
-
+# exports all notes from study books as question-answer cards
 def export_study(device):
   sync_dates = []
   if not check_reqs(["STUDY_FRONT_FIELD", "STUDY_BACK_FIELD", "STUDY_MODEL_NAME"], raise_error=False):
@@ -216,7 +216,7 @@ def export_study(device):
     
     ids = anki_connect.invoke("addNotes", notes=notes)
 
-    
+    sync_dates = []
     notes_dates = [ms_to_str(x) for x in notes_dates]
     sync_dates.extend(notes_dates)
     
@@ -227,6 +227,7 @@ def export_study(device):
         f.write(f"\n[{sync_dates[0]}][STUDY]: {len(ids)} study questions imported.")
   return sync_dates
 
+# exports all words and notes for specific language
 def export_lang(device, lang):
   check_reqs(["WORD_FRONT_FIELD", "WORD_BACK_FIELD", "WORD_MODEL_NAME", "NOTE_FRONT_FIELD", "NOTE_BACK_FIELD", "NOTE_MODEL_NAME"])
   
@@ -255,12 +256,36 @@ def export_lang(device, lang):
   update_prev_translations([x[1] for x in notes])
 
   # print(notes)
+  len_words = add_words(words, IMPORT_WORDS_FROM, import_notes_to, lang)
+  
+  print(f"Got {len(notes)} notes...")  
+  len_sentences = add_notes(notes, import_notes_to)
+  
+  device.close()
+
+  sync_dates = []
+  words_dates = [ms_to_str(x) for x in words_dates]
+  notes_dates = [ms_to_str(x) for x in notes_dates]
+  sync_dates.extend(words_dates)
+  sync_dates.extend(notes_dates)
+  
+  
+  with open("history.txt", "a") as f:
+    if len_sentences:
+      f.write(f"\n[{notes_dates[0]}][{lang}]: {len_sentences} sentences imported.")
+    if len_words:
+      f.write(f"\n[{words_dates[0]}][{lang}]: {len_words} words imported.")
+  
+  return sync_dates
+
+# logic of adding words to anki decks
+def add_words(words, from_, to_, lang):
   ids = []
   left_out_words = words
   amount_words = 0
   if len(words)>0:
     ids = []
-    query_words = ''.join(f'"deck:{IMPORT_WORDS_FROM}" AND "{IMPORT_FIELD}:{word}" AND "is:suspended" AND -"deck:{import_words_to}"' + ' OR ' for word in words)[:-4]
+    query_words = ''.join(f'"deck:{from_}" AND "{IMPORT_FIELD}:{word}" AND "is:suspended" AND -"deck:{to_}"' + ' OR ' for word in words)[:-4]
     
     if not PROPERTIES.get("SKIP_REPEATS_CHECK"):
       ids = anki_connect.invoke("findCards", query=query_words)
@@ -272,7 +297,7 @@ def export_lang(device, lang):
       amount_words+=len(imported_words)
       print(f"imported words from anki: {imported_words}")
       left_out_words = [item for item in words if item not in imported_words]
-      anki_connect.invoke("changeDeck", cards=ids, deck=import_words_to)
+      anki_connect.invoke("changeDeck", cards=ids, deck=to_)
       anki_connect.invoke("unsuspend", cards=ids)
     else:
       print("Couldn't find any word to import from anki, gonna try to generate from dicts")
@@ -305,16 +330,19 @@ def export_lang(device, lang):
   
   len_words = len(words)
   if left_out_words:
-    generate_cards(left_out_words, lang, import_words_to)
+    generate_cards(left_out_words, lang, to_)
   amount_words+=len(left_out_words)
   len_words = amount_words
-  print(f"Got {len(notes)} notes...")
+  
   print(f"Got {len_words} words...")
+  return len_words
 
+# logic of adding notes to anki decks
+def add_notes(notes, to_):
   if len(notes)>0:
     fields = anki_connect.invoke("modelFieldNames", modelName=NOTE_MODEL_NAME)
     ids = []
-    note_blueprint = {"deckName": import_notes_to,
+    note_blueprint = {"deckName": to_,
                     "modelName": NOTE_MODEL_NAME,
                     'fields': {x:'' for x in fields},
                     "options": {
@@ -329,24 +357,9 @@ def export_lang(device, lang):
       notes[i] = note
 
     ids = anki_connect.invoke("addNotes", notes=notes)
-  len_sentences = len(ids)
-  device.close()
+  return len(ids)
 
-  sync_dates = []
-  words_dates = [ms_to_str(x) for x in words_dates]
-  notes_dates = [ms_to_str(x) for x in notes_dates]
-  sync_dates.extend(words_dates)
-  sync_dates.extend(notes_dates)
-  
-  
-  with open("history.txt", "a") as f:
-    if len_sentences:
-      f.write(f"\n[{notes_dates[0]}][{lang}]: {len_sentences} sentences imported.")
-    if len_words:
-      f.write(f"\n[{words_dates[0]}][{lang}]: {len_words} words imported.")
-  
-  return sync_dates
-
+# loads all dates that were synced
 def get_sync_dates():
   sync_dates = []
   try:
@@ -357,6 +370,7 @@ def get_sync_dates():
   
   return sync_dates
 
+# returns only dates and items that are new and out of sync
 def get_new_items(l, dates, to_str_delegate=ms_to_str):
   new_items = None
   if len(l) != len(dates):
