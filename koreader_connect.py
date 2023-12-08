@@ -314,11 +314,10 @@ class Koreader:
 # just for debug
 if __name__ == "__main__":
   k = Koreader()
+  k.connect()
   print(k.get_notes("RU"))
   print(k.get_notes("ES"))
   print(k.get_notes("Study"))
-  
-  k.connect()
   print(k.get_words("RU"))
   print(k.get_words("ES"))
   k.close()
