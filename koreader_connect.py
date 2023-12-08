@@ -121,8 +121,7 @@ class Koreader:
       self.close()
       if connect:
         break
-        
-    
+         
   # checks if there is all data that is needed
   def __has_needed_data(self, scope="all"):
     result = False
@@ -143,16 +142,6 @@ class Koreader:
     
     return result
   
-  def get_dict_order(self):
-    if self.__has_needed_data(scope="settings"):
-      data = luadata.read(os.path.join(os.getcwd(), SETTINGS_FILENAME))
-      if data:
-        order = data.get("dicts_order", {})
-        if not order:
-          order = {} 
-        return order
-    return {}
-  
   # backup db, opens db connection, resets latest date
   def __init__(self, download_dicts=False):
     self.PROPERTIES={}
@@ -172,7 +161,6 @@ class Koreader:
       self.books = {x[1]:x[0] for x in books}
       books_info.close()
 
-    
   #  opens db connection
   def connect(self):
     failed = False
@@ -200,7 +188,6 @@ class Koreader:
     else: self.titles = {}
     return not failed
       
-
   # closes db connection 
   def close(self):
     if self.__is_connected:
@@ -213,7 +200,18 @@ class Koreader:
       return self.cur.execute(command)
     else:
       return []
-    
+  
+  # get dict order from koreader
+  def get_dict_order(self):
+    if self.__has_needed_data(scope="settings"):
+      data = luadata.read(os.path.join(os.getcwd(), SETTINGS_FILENAME))
+      if data:
+        order = data.get("dicts_order", {})
+        if not order:
+          order = {} 
+        return order
+    return {}
+  
   # query db for all saved words, omit those that are not in target lang
   def get_words(self, lang=None) -> list:
     #print("lang selection is not working for now, come later for this")
