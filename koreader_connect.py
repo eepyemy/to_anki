@@ -6,6 +6,7 @@ import glob
 import psutil
 from functools import reduce
 import luadata
+from datetime import date
 from utility_funcs import *
 
 
@@ -315,10 +316,21 @@ class Koreader:
 if __name__ == "__main__":
   k = Koreader()
   k.connect()
-  print(k.get_notes("RU"))
-  print(k.get_notes("ES"))
-  print(k.get_notes("Study"))
-  print(k.get_words("RU"))
-  print(k.get_words("ES"))
+  d = datetime(2023,6,22,1,1,1)
+  
+  a = list(zip(*k.get_notes("EN"),))
+  a.extend(list(zip(*k.get_notes("NL"),)))
+  a.extend(list(zip(*k.get_words("EN"),)))
+  a.extend(list(zip(*k.get_words("NL"),)))
+  a.extend(list(zip(*k.get_notes("STUDY"),)))
+  dates = [(i,ms_to_str(x)) for i,x in a if ms_to_date(x) < d]
+  print(dates)
+  #print(k.get_notes("STUDY"))
+  with open("dates.json", "w") as f:
+    json.dump([x for i,x in dates], f)
+  #print(k.get_notes("RU"))
+  #print(k.get_notes("Study"))
+  #print(k.get_words("RU"))
+  #print(k.get_words("ES"))
   k.close()
   

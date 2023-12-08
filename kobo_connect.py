@@ -4,7 +4,7 @@ import os, string
 import shutil
 import psutil
 from utility_funcs import *
-
+import json
 
 #shutil.copyfile(src, dst)
 
@@ -135,13 +135,26 @@ class Kobo:
       return [], []
 
     return notes, dates
-  
+
+
 if __name__ == "__main__":
   k = Kobo()
   k.connect()
-  print(k.get_notes("NL"))
+  d = datetime(2023,6,22,1,1,1)
+  _, dates = k.get_notes("EN")
+  dates.extend(k.get_notes("NL")[1])
+  dates.extend(k.get_notes("STUDY")[1])
+  dates.extend(k.get_words("NL")[1])
+  dates.extend(k.get_words("EN")[1])
+  
+  print(dates)
+  dates = [ms_to_str(x) for x in dates if ms_to_date(x) < d]
+  #print(k.get_notes("STUDY"))
+  with open("dates.json", "w") as f:
+    json.dump(dates, f)
   #print(k.get_notes("RU"))
   #print(k.get_notes("Study"))
   #print(k.get_words("RU"))
-  #print(k.get_words("NL"))
+  #print(k.get_words("ES"))
   k.close()
+  
