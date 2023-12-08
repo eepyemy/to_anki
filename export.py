@@ -64,7 +64,7 @@ def main():
   sync_dates = list(set(sync_dates))
   
   print("saving sync dates")
-  with open("sync_dates.json", "w") as k:
+  with open("sync_dates.json", "w", encoding="utf-8") as k:
     json.dump(sync_dates, k)
   
   try:
