@@ -1,3 +1,4 @@
+from time import sleep
 import json
 import os
 import anki_connect
@@ -10,9 +11,25 @@ from googletrans import Translator
 import traceback
 from utility_funcs import *
 from init import *
+import typer
+from typing import List
+from rich import print
 
-def main():
-  global TRANSLATOR, GOOGLE_TRANSLATOR, DICTS, USE_GOOGLE
+app = typer.Typer()
+
+@app.command()
+def main(type: str = PROPERTIES.get("DEVICE", None),filename: str = None, from_langs: str = "".join(f"{x} " for x in list(FROM_LANGS.keys()))[:-1], to_lang:str = TO_LANG, notes_deck_name:str = IMPORT_NOTES_TO, words_deck_name:str = IMPORT_WORDS_TO, sleep_sec:int = None, use_google: bool = USE_GOOGLE, skip_import : bool = PROPERTIES.get("SKIP_REPEATS_CHECK", False), download_dicts : bool = TRY_DOWNLOAD):
+  global IMPORT_NOTES_TO,IMPORT_WORDS_TO,PROPERTIES,TO_LANG,USE_GOOGLE,TRANSLATOR, GOOGLE_TRANSLATOR, DICTS, USE_GOOGLE, FROM_LANGS, TRY_DOWNLOAD
+  PROPERTIES["SKIP_REPEATS_CHECK"] = skip_import
+  USE_GOOGLE = use_google
+  TO_LANG = to_lang
+  FROM_LANGS = {x:get_param(f"{x}_IMPORT_FROM", "") for x in from_langs.split(" ")}
+  IMPORT_WORDS_TO = words_deck_name
+  IMPORT_NOTES_TO = notes_deck_name
+  TRY_DOWNLOAD = download_dicts
+  if sleep_sec:
+    print("Sleeping until system is stable...")
+    sleep(sleep_sec)
   auth_key = PROPERTIES.get("DEEP_L_AUTH_KEY", "")
   try:
     TRANSLATOR = deepl.Translator(auth_key)
@@ -23,17 +40,23 @@ def main():
   GOOGLE_TRANSLATOR = Translator()
   
   device = None
-  if "DEVICE" not in PROPERTIES:
+  if "DEVICE" not in PROPERTIES and type==None:
     print("Aborting, DEVICE propertiy is not set")
     return None
-  if PROPERTIES["DEVICE"] == "koreader":
+  if type == "koreader":
     device = koreader_connect.Koreader(download_dicts=TRY_DOWNLOAD)
-  elif PROPERTIES["DEVICE"] == "kobo":
+  elif type == "kobo":
     device = kobo_connect.Kobo()
-  elif PROPERTIES["DEVICE"] == "json":
-    device = json_connect.Json()
-  elif PROPERTIES["DEVICE"] == "csv":
-    device = csv_connect.Csv()
+  elif type == "json":
+    if filename:
+      device = json_connect.Json(filename)
+    else:
+      device = json_connect.Json()
+  elif type == "csv":
+    if filename:
+      device = csv_connect.Csv(filename)
+    else:
+      device = csv_connect.Csv()
   
 
   if not device:
@@ -81,21 +104,30 @@ def translate(text, from_lang):
   if text in PREV_TRANSLATIONS:
     return PREV_TRANSLATIONS[text]
   
+  result = ""
+  try: 
+    usage = TRANSLATOR.get_usage()
+    if text:
+      if usage.character.count + len(text) > usage.character.limit:
+        print("Out of limit.")
+        return None
+      else:
+        if TO_LANG == "EN":
+          tl = "EN-US"
+        else:
+          tl = TO_LANG
+        return "[DeepL]:"+TRANSLATOR.translate_text(text, target_lang=tl, source_lang=from_lang.upper()).text
+  except Exception as e:
+    print("There was a problem with DeepL, ",e)
+
   if USE_GOOGLE:
-    result = ""
     try:
       result = "[Google]:"+GOOGLE_TRANSLATOR.translate(text, src=from_lang, dest=TO_LANG).text
+      return result
     except Exception as e:
       print("There was a problem with Google Translate, ", e)
-    return result 
+  return "No translation available"
   
-  usage = TRANSLATOR.get_usage()
-  if text:
-    if usage.character.count + len(text) > usage.character.limit:
-      print("Out of limit.")
-      return None
-    else:
-      return "[DeepL]:"+TRANSLATOR.translate_text(text, target_lang=TO_LANG, source_lang=from_lang.upper()).text
 
 # generate cards from dicts or from google translate if dicts are not available
 def generate_cards(words, lang, import_words_to):
@@ -110,7 +142,7 @@ def generate_cards(words, lang, import_words_to):
                   },
                   }
   notes = []
-  
+  translations = []
   for word in words:
     note = copy.deepcopy(note_blueprint)
     note['fields'][WORD_FRONT_FIELD] = word
@@ -123,11 +155,15 @@ def generate_cards(words, lang, import_words_to):
       if definitions:
         note['fields'][WORD_BACK_FIELD] = ''.join('<div class="definition">'+x+'</div>' for x in definitions)
       else:
-        note['fields'][WORD_BACK_FIELD] = f'<div class="definition">{translate(word, lang)}</div>'
+        t = (word, translate(word, lang))
+        translations.append(t)
+        note['fields'][WORD_BACK_FIELD] = f'<div class="definition">{t[1]}</div>'
     else:
-      note['fields'][WORD_BACK_FIELD] = f'<div class="definition">{translate(word, lang)}</div>'
+      t = (word, translate(word, lang))
+      translations.append(t)
+      note['fields'][WORD_BACK_FIELD] = f'<div class="definition">{t[1]}</div>'
     notes.append(note)
-
+  update_prev_translations(dict(translations))
   ids = anki_connect.invoke("addNotes", notes=notes)
 
 # exports all notes from study books as question-answer cards
@@ -195,11 +231,15 @@ def export_lang(device, lang):
 
   device.connect()
   FROM_LANG=lang
+  
   IMPORT_WORDS_FROM = FROM_LANGS[lang]
-  import_notes_to= f"{MAIN_DECK}::{lang}::{IMPORT_NOTES_TO}"
-  import_words_to=f"{MAIN_DECK}::{lang}::{IMPORT_WORDS_TO}"
+  if not IMPORT_WORDS_FROM:
+    PROPERTIES["SKIP_REPEATS_CHECK"] = True
+  import_notes_to= f"{MAIN_DECK}::{lang}_{TO_LANG}::{IMPORT_NOTES_TO}"
+  import_words_to= f"{MAIN_DECK}::{lang}_{TO_LANG}::{IMPORT_WORDS_TO}"
   anki_connect.invoke("createDeck", deck=import_notes_to)
   anki_connect.invoke("createDeck", deck=import_words_to)
+  
   
 
   print(f"syncing all words...")
@@ -213,21 +253,25 @@ def export_lang(device, lang):
   # list -> (note, translation)
   notes = [[x[0], translate(x[0], lang)] for x in notes if x[1] == None or x[1].strip() == '']
 
-  update_prev_translations()
+  update_prev_translations(dict(notes))
 
   # print(notes)
-  len_words = add_words(words, IMPORT_WORDS_FROM, import_words_to, lang)
+  len_words = add_words(words, import_words_to, lang, IMPORT_WORDS_FROM)
   
   print(f"Got {len(notes)} notes...")  
   len_sentences = add_notes(notes, import_notes_to)
   
   device.close()
-
+  is_skip_sync = (isinstance(device, csv_connect.Csv) 
+               or isinstance(device, json_connect.Json)) 
+  
   sync_dates = []
-  words_dates = [ms_to_str(x) for x in words_dates]
-  notes_dates = [ms_to_str(x) for x in notes_dates]
-  sync_dates.extend(words_dates)
-  sync_dates.extend(notes_dates)
+  if not is_skip_sync:
+    words_dates = [ms_to_str(x) for x in words_dates]
+    notes_dates = [ms_to_str(x) for x in notes_dates]
+    sync_dates.extend(words_dates)
+    sync_dates.extend(notes_dates)
+  else: print("skipping sync dates...")
   
   
   with open("history.txt", "a") as f:
@@ -239,7 +283,7 @@ def export_lang(device, lang):
   return sync_dates
 
 # logic of adding words to anki decks
-def add_words(words, from_, to_, lang):
+def add_words(words, to_, lang, from_=None):
   ids = []
   left_out_words = words
   amount_words = 0
@@ -347,8 +391,10 @@ def get_new_items(l, dates, to_str_delegate=ms_to_str):
   return new_items, new_dates
 
 if __name__ == "__main__":
+  app()
   try:
-    main()
+    #main()
+    pass
   except Exception as e:
     if "No connection could be made" in str(e):
       e = "[ERROR]: AnkiConnect add-on is not installed or Anki is not running"

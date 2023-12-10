@@ -47,7 +47,7 @@ class Kobo:
   def get_dict_order(self):
     return {}    
   
-  def __init__(self):
+  def __init__(self,filename=None):
     self.__is_connected = False
     self.__backup_db(os.path.join(os.getcwd(),"KoboReader.sqlite"))
 

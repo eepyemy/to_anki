@@ -2,6 +2,8 @@ import os
 from glob import glob
 import json 
 from pystardict import Dictionary
+from rich import print
+
 
 PROPERTIES={}
 if not os.path.exists("PROPERTIES.env"):
@@ -21,7 +23,7 @@ def get_param(param_name, default=None):
 
 FROM_LANGS = [x for x in PROPERTIES if len(x)==2]
 
-FROM_LANGS = {x:get_param(f"{x}_IMPORT_FROM") for x in FROM_LANGS}
+FROM_LANGS = {x:get_param(f"{x}_IMPORT_FROM", "") for x in FROM_LANGS}
 
 MAIN_DECK = get_param("MAIN_DECK", "Default")
 IMPORT_WORDS_TO = get_param("IMPORT_WORDS_TO", "Words_Reading")
