@@ -266,9 +266,10 @@ def export_lang(device, lang):
                or isinstance(device, json_connect.Json)) 
   
   sync_dates = []
+  words_dates = [ms_to_str(x) for x in words_dates]
+  notes_dates = [ms_to_str(x) for x in notes_dates]
+  
   if not is_skip_sync:
-    words_dates = [ms_to_str(x) for x in words_dates]
-    notes_dates = [ms_to_str(x) for x in notes_dates]
     sync_dates.extend(words_dates)
     sync_dates.extend(notes_dates)
   else: print("skipping sync dates...")
