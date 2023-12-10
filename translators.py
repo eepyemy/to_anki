@@ -62,7 +62,14 @@ class TranslatorsHandler:
     self.translators["deepl"][0][1].append(
       self.config.get("DEEP_L_AUTH_KEY", ""))
     self.__initialize_translators()
-    
+  def close(self):
+    try:
+      translator, _ = self.translators["deepl"] 
+      if translator:
+        translator.close()
+    except Exception as e:
+      print("something wrong with closing translator...", e)
+
   def __initialize_translators(self):
     for name, config in self.translators.items():
       constructor, langs = config
@@ -96,7 +103,6 @@ class TranslatorsHandler:
     
     # skipping translating if already translated it before
     from_to = f"{from_}{to_}"
-    print(from_to)
     if from_to in self.prev_translations:
       if text in self.prev_translations[from_to]:
         return self.prev_translations[from_to][text]
@@ -168,3 +174,4 @@ class TranslatorsHandler:
 if __name__ == "__main__":
   a = TranslatorsHandler()
   print(a.translate("я даже не знаю что сказать", to_="EN", from_="RU"))
+  a.close()
