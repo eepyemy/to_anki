@@ -22,13 +22,14 @@ class Json:
     return {}
   
   # backup db, opens db connection, resets latest date
-  def __init__(self, filename=JSON_FILENAME):
-    self.PROPERTIES={}
+  def __init__(self, properties=None):
     global JSON_FILENAME
-    JSON_FILENAME = filename
-    if os.path.exists("PROPERTIES.env"):
+    if properties is not None:
+      self.PROPERTIES=properties
+    else:
       with open("PROPERTIES.env", "r", encoding="utf-8") as f:
-        self.PROPERTIES = {x.split("=")[0]:x.split("=")[1].strip() for x in f.readlines() if '=' in x and x.strip()[-1]!="="}
+        self.PROPERTIES = {x.split("=")[0]:x.split("=")[1].strip("\n") for x in f.readlines() if '=' in x and x.strip("\n")[-1]!="="}
+    JSON_FILENAME = properties.get("FILENAME",JSON_FILENAME)
     self.__is_connected = False
     self.__notes_data = []
     #self.connect()
