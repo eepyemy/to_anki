@@ -12,71 +12,90 @@ import traceback
 from utility_funcs import *
 from init import *
 import typer
-from typing import List
 from rich import print
+from translators import TranslatorsHandler
+from collections import ChainMap
 
 app = typer.Typer()
 
+TRANSLATOR = None
+DICTS = None
+
 @app.command()
-def main(type: str = PROPERTIES.get("DEVICE", None),filename: str = None, from_langs: str = "".join(f"{x} " for x in list(FROM_LANGS.keys()))[:-1], to_lang:str = TO_LANG, notes_deck_name:str = IMPORT_NOTES_TO, words_deck_name:str = IMPORT_WORDS_TO, sleep_sec:int = None, use_google: bool = USE_GOOGLE, skip_import : bool = PROPERTIES.get("SKIP_REPEATS_CHECK", False), download_dicts : bool = TRY_DOWNLOAD):
-  global IMPORT_NOTES_TO,IMPORT_WORDS_TO,PROPERTIES,TO_LANG,USE_GOOGLE,TRANSLATOR, GOOGLE_TRANSLATOR, DICTS, USE_GOOGLE, FROM_LANGS, TRY_DOWNLOAD
-  PROPERTIES["SKIP_REPEATS_CHECK"] = skip_import
-  USE_GOOGLE = use_google
-  TO_LANG = to_lang
-  FROM_LANGS = {x:get_param(f"{x}_IMPORT_FROM", "") for x in from_langs.split(" ")}
-  IMPORT_WORDS_TO = words_deck_name
-  IMPORT_NOTES_TO = notes_deck_name
-  TRY_DOWNLOAD = download_dicts
+def main(
+  type: str = CONFIG.get("DEVICE", None), 
+  filename: str = None, 
+  from_langs: str = "".join(f"{x} " for x in list(CONFIG["FROM_LANGS"].keys()))[:-1], 
+  to_lang:str = CONFIG['TO_LANG'], 
+  notes_deck_name:str = CONFIG['IMPORT_NOTES_TO'], 
+  words_deck_name:str = CONFIG['IMPORT_WORDS_TO'], sleep_sec:int = None, 
+  use_google: bool = CONFIG["USE_GOOGLE"], 
+  skip_import : bool = CONFIG.get("SKIP_REPEATS_CHECK", False), 
+  download_dicts : bool = CONFIG["TRY_DOWNLOAD"], 
+  use_deepl:bool = CONFIG.get("USE_DEEPL",True),
+  use_dicts:bool = CONFIG.get("USE_DICTS", True)
+  ):
+  
+  # intializing config variables
+  global CONFIG, TRANSLATOR, DICTS
+  CONFIG["SKIP_REPEATS_CHECK"] = skip_import
+  CONFIG["USE_GOOGLE"] = use_google
+  CONFIG["USE_DEEPL"] = use_deepl
+  CONFIG["TO_LANG"] = to_lang
+  CONFIG["FROM_LANGS"] = {x:get_param(f"{x}_IMPORT_FROM", "") for x in from_langs.split(" ")}
+  CONFIG['IMPORT_WORDS_TO'] = words_deck_name
+  CONFIG['IMPORT_NOTES_TO'] = notes_deck_name
+  CONFIG["TRY_DOWNLOAD"] = download_dicts
+  CONFIG["FILENAME"] = filename
+  CONFIG["USE_DICTS"] = use_dicts
   if sleep_sec:
     print("Sleeping until system is stable...")
     sleep(sleep_sec)
-  auth_key = PROPERTIES.get("DEEP_L_AUTH_KEY", "")
-  try:
-    TRANSLATOR = deepl.Translator(auth_key)
-  except Exception as e:
-    USE_GOOGLE = True
-    print(e)
-    print("Probably your deepl key is not valid, using Google translator...")
-  GOOGLE_TRANSLATOR = Translator()
   
+  # initializing translator
+  langs = {}
+  TRANSLATOR = TranslatorsHandler(config=CONFIG)
+  for name,trans in TRANSLATOR.translators.items():
+    _, langcodes = trans
+    langs.update(langcodes)
+  CONFIG["SUPPORTED_LANGS"] = langs 
+  
+  # setting device
   device = None
-  if "DEVICE" not in PROPERTIES and type==None:
+  if "DEVICE" not in CONFIG and type==None:
     print("Aborting, DEVICE propertiy is not set")
     return None
   if type == "koreader":
-    device = koreader_connect.Koreader(download_dicts=TRY_DOWNLOAD)
+    device = koreader_connect.Koreader(download_dicts=CONFIG["TRY_DOWNLOAD"], config=CONFIG)
   elif type == "kobo":
-    device = kobo_connect.Kobo()
+    device = kobo_connect.Kobo(config=CONFIG)
   elif type == "json":
-    if filename:
-      device = json_connect.Json(filename)
-    else:
-      device = json_connect.Json()
+    device = json_connect.Json(config=CONFIG)
   elif type == "csv":
-    if filename:
-      device = csv_connect.Csv(filename)
-    else:
-      device = csv_connect.Csv()
+    device = csv_connect.Csv(config=CONFIG)
   
 
   if not device:
     print("Device is not connected")
   
-  if not FROM_LANGS:
+  if not CONFIG["FROM_LANGS"]:
     print("No language properties are set, need at least one language. Aborting")
     return None
 
+  # preparing dicts
   DICTS = load_dicts_ordered(device)
-  
+
+  # loading previous sync dates
   sync_dates = get_sync_dates()
   
-  
-  for lang in FROM_LANGS:
+  # generating cards for every FROM language
+  for lang in CONFIG["FROM_LANGS"]:
     print()
     print(f"Exporting from {lang} language...")
     print()
     sync_dates.extend(export_lang(device, lang))
 
+  # generating study cards
   print()
   print(f"Exporting study questions...")
   print()
@@ -90,51 +109,15 @@ def main(type: str = PROPERTIES.get("DEVICE", None),filename: str = None, from_l
   with open("sync_dates.json", "w", encoding="utf-8") as k:
     json.dump(sync_dates, k)
   
-  try:
-    if not USE_GOOGLE:
-      TRANSLATOR.close()
-  except Exception as e:
-    print("something wrong with closing translator...", e)
+  TRANSLATOR.close()
 
-# translate text using TO_LANG property and chosen translator from there
-def translate(text, from_lang):
-  #print(f"translating: '{text}'...")
-  
-  # skipping translating if already translated it before
-  if text in PREV_TRANSLATIONS:
-    return PREV_TRANSLATIONS[text]
-  
-  result = ""
-  try: 
-    usage = TRANSLATOR.get_usage()
-    if text:
-      if usage.character.count + len(text) > usage.character.limit:
-        print("Out of limit.")
-        return None
-      else:
-        if TO_LANG == "EN":
-          tl = "EN-US"
-        else:
-          tl = TO_LANG
-        return "[DeepL]:"+TRANSLATOR.translate_text(text, target_lang=tl, source_lang=from_lang.upper()).text
-  except Exception as e:
-    print("There was a problem with DeepL, ",e)
-
-  if USE_GOOGLE:
-    try:
-      result = "[Google]:"+GOOGLE_TRANSLATOR.translate(text, src=from_lang, dest=TO_LANG).text
-      return result
-    except Exception as e:
-      print("There was a problem with Google Translate, ", e)
-  return "No translation available"
-  
 
 # generate cards from dicts or from google translate if dicts are not available
 def generate_cards(words, lang, import_words_to):
-  fields = anki_connect.invoke("modelFieldNames", modelName=WORD_MODEL_NAME)
+  fields = anki_connect.invoke("modelFieldNames", modelName=CONFIG["WORD_MODEL_NAME"])
   ids = []
   note_blueprint = {"deckName": import_words_to,
-                  "modelName": WORD_MODEL_NAME,
+                  "modelName": CONFIG["WORD_MODEL_NAME"],
                   'fields': {x:'' for x in fields},
                   "options": {
                       "allowDuplicate": False,
@@ -145,25 +128,29 @@ def generate_cards(words, lang, import_words_to):
   translations = []
   for word in words:
     note = copy.deepcopy(note_blueprint)
-    note['fields'][WORD_FRONT_FIELD] = word
-    if USE_DICTS:
+    note['fields'][CONFIG["WORD_FRONT_FIELD"]] = word
+    if CONFIG["USE_DICTS"]:
       definitions = []
       for dictionary in DICTS:
         result = dictionary.get(word)
         if result:
           definitions.append(result)
       if definitions:
-        note['fields'][WORD_BACK_FIELD] = ''.join('<div class="definition">'+x+'</div>' for x in definitions)
+        note['fields'][CONFIG["WORD_BACK_FIELD"]] = ''.join('<div class="definition">'+x+'</div>' for x in definitions)
       else:
-        t = (word, translate(word, lang))
+        t = (word, TRANSLATOR.translate(word, from_=lang))
         translations.append(t)
-        note['fields'][WORD_BACK_FIELD] = f'<div class="definition">{t[1]}</div>'
+        note['fields'][CONFIG["WORD_BACK_FIELD"]] = f'<div class="definition">{t[1]}</div>'
     else:
-      t = (word, translate(word, lang))
+      t = (word, TRANSLATOR.translate(word, from_=lang))
       translations.append(t)
-      note['fields'][WORD_BACK_FIELD] = f'<div class="definition">{t[1]}</div>'
+      note['fields'][CONFIG["WORD_BACK_FIELD"]] = f'<div class="definition">{t[1]}</div>'
     notes.append(note)
-  update_prev_translations(dict(translations))
+  from_to = f"{lang}{CONFIG['TO_LANG']}"
+  translations = [(x,t) for x,t in translations 
+                  if t!="No translation available"]
+  TRANSLATOR.update_prev_translations(
+    dict(translations),from_to)
   ids = anki_connect.invoke("addNotes", notes=notes)
 
 # exports all notes from study books as question-answer cards
@@ -172,7 +159,7 @@ def export_study(device):
   if not check_reqs(["STUDY_FRONT_FIELD", "STUDY_BACK_FIELD", "STUDY_MODEL_NAME"], raise_error=False):
     return []
 
-  if type(device).__name__ != "Koreader" or "STUDY" not in PROPERTIES:
+  if type(device).__name__ != "Koreader" or "STUDY" not in CONFIG:
     return []
   
   device.connect()
@@ -186,10 +173,10 @@ def export_study(device):
   print(f"Got {len(notes)} study questions...")
   
   if len(notes)>0:
-    fields = anki_connect.invoke("modelFieldNames", modelName=PROPERTIES.get("STUDY_MODEL_NAME"))
+    fields = anki_connect.invoke("modelFieldNames", modelName=CONFIG.get("STUDY_MODEL_NAME"))
     ids = []
     note_blueprint = {"deckName": "",
-                    "modelName": PROPERTIES.get("STUDY_MODEL_NAME"),
+                    "modelName": CONFIG.get("STUDY_MODEL_NAME"),
                     'fields': {x:'' for x in fields},
                     "options": {
                         "allowDuplicate": False,
@@ -199,11 +186,11 @@ def export_study(device):
     decks = []
     for i, note1 in enumerate(notes.copy()):
       note = copy.deepcopy(note_blueprint)
-      note['deckName'] = f"{MAIN_DECK}::{PROPERTIES.get('IMPORT_STUDY_TO', 'Study')}::{os.path.basename(note1[2])}"
+      note['deckName'] = f"{CONFIG['MAIN_DECK']}::{CONFIG.get('IMPORT_STUDY_TO', 'Study')}::{os.path.basename(note1[2])}"
       decks.append(note["deckName"])
       #print(note['deckName'])
-      note['fields'][PROPERTIES.get("STUDY_FRONT_FIELD")] = note1[0]
-      note['fields'][PROPERTIES.get("STUDY_BACK_FIELD")] = note1[1]
+      note['fields'][CONFIG.get("STUDY_FRONT_FIELD")] = note1[0]
+      note['fields'][CONFIG.get("STUDY_BACK_FIELD")] = note1[1]
       notes[i] = note
 
     decks = list(set(decks))
@@ -232,11 +219,11 @@ def export_lang(device, lang):
   device.connect()
   FROM_LANG=lang
   
-  IMPORT_WORDS_FROM = FROM_LANGS[lang]
+  IMPORT_WORDS_FROM = CONFIG["FROM_LANGS"][lang]
   if not IMPORT_WORDS_FROM:
-    PROPERTIES["SKIP_REPEATS_CHECK"] = True
-  import_notes_to= f"{MAIN_DECK}::{lang}_{TO_LANG}::{IMPORT_NOTES_TO}"
-  import_words_to= f"{MAIN_DECK}::{lang}_{TO_LANG}::{IMPORT_WORDS_TO}"
+    CONFIG["SKIP_REPEATS_CHECK"] = True
+  import_notes_to= f"{CONFIG['MAIN_DECK']}::{lang}_{CONFIG['TO_LANG']}::{CONFIG['IMPORT_NOTES_TO']}"
+  import_words_to= f"{CONFIG['MAIN_DECK']}::{lang}_{CONFIG['TO_LANG']}::{CONFIG['IMPORT_WORDS_TO']}"
   anki_connect.invoke("createDeck", deck=import_notes_to)
   anki_connect.invoke("createDeck", deck=import_words_to)
   
@@ -251,9 +238,12 @@ def export_lang(device, lang):
   notes, notes_dates = get_new_items(notes, notes_dates)
   
   # list -> (note, translation)
-  notes = [[x[0], translate(x[0], lang)] for x in notes if x[1] == None or x[1].strip() == '']
+  notes = [[x[0], TRANSLATOR.translate(x[0], from_=lang)] for x in notes if x[1] == None or x[1].strip() == '']
 
-  update_prev_translations(dict(notes))
+  
+  from_to = f"{lang}{CONFIG['TO_LANG']}"
+  notes = [(x,t) for x,t in notes if t!="No translation available"]
+  TRANSLATOR.update_prev_translations(dict(notes),from_to)
 
   # print(notes)
   len_words = add_words(words, import_words_to, lang, IMPORT_WORDS_FROM)
@@ -290,15 +280,15 @@ def add_words(words, to_, lang, from_=None):
   amount_words = 0
   if len(words)>0:
     ids = []
-    query_words = ''.join(f'"deck:{from_}" AND "{IMPORT_FIELD}:{word}" AND "is:suspended" AND -"deck:{to_}"' + ' OR ' for word in words)[:-4]
+    query_words = ''.join(f'"deck:{from_}" AND "{CONFIG["IMPORT_FIELD"]}:{word}" AND "is:suspended" AND -"deck:{to_}"' + ' OR ' for word in words)[:-4]
     
-    if not PROPERTIES.get("SKIP_REPEATS_CHECK"):
+    if not CONFIG.get("SKIP_REPEATS_CHECK"):
       ids = anki_connect.invoke("findCards", query=query_words)
     
     repeats = []
     if len(ids) > 0:
       imported_words = anki_connect.invoke("cardsInfo", cards=ids)
-      imported_words = [x['fields'][IMPORT_FIELD]['value'] for x in imported_words]
+      imported_words = [x['fields'][CONFIG["IMPORT_FIELD"]]['value'] for x in imported_words]
       amount_words+=len(imported_words)
       print(f"imported words from anki: {imported_words}")
       left_out_words = [item for item in words if item not in imported_words]
@@ -308,16 +298,17 @@ def add_words(words, to_, lang, from_=None):
       print("Couldn't find any word to import from anki, gonna try to generate from dicts")
     if left_out_words:
       repeat_ids = []
-      query_words = ''.join(f'"deck:{MAIN_DECK}" AND "{IMPORT_FIELD}:{word}" AND -"is:suspended" OR "deck:{MAIN_DECK}" AND "{WORD_FRONT_FIELD}:{word}" AND -"is:suspended"' + ' OR ' for word in left_out_words)[:-4]
-      if not PROPERTIES.get("SKIP_REPEATS_CHECK"):
+      
+      query_words = ''.join(f'"deck:{CONFIG["MAIN_DECK"]}" AND "{CONFIG["IMPORT_FIELD"]}:{word}" AND -"is:suspended" OR "deck:{CONFIG["MAIN_DECK"]}" AND "{CONFIG["WORD_FRONT_FIELD"]}:{word}" AND -"is:suspended"' + ' OR ' for word in left_out_words)[:-4]
+      if not CONFIG.get("SKIP_REPEATS_CHECK"):
         repeat_ids = anki_connect.invoke("findCards", query=query_words)
       repeats = anki_connect.invoke("cardsInfo", cards=repeat_ids)
       #repeats = [x['fields'][IMPORT_FIELD]['value'] for x in repeats]
       
       reps = []
       for card in repeats:
-        imp = card['fields'].get(IMPORT_FIELD)
-        gen = card['fields'].get(WORD_FRONT_FIELD)
+        imp = card['fields'].get(CONFIG["IMPORT_FIELD"])
+        gen = card['fields'].get(CONFIG["WORD_FRONT_FIELD"])
         if gen:
           reps.append(gen['value'])
         if imp:
@@ -346,10 +337,10 @@ def add_words(words, to_, lang, from_=None):
 def add_notes(notes, to_):
   ids = []
   if len(notes)>0:
-    fields = anki_connect.invoke("modelFieldNames", modelName=NOTE_MODEL_NAME)
+    fields = anki_connect.invoke("modelFieldNames", modelName=CONFIG["NOTE_MODEL_NAME"])
     ids = []
     note_blueprint = {"deckName": to_,
-                    "modelName": NOTE_MODEL_NAME,
+                    "modelName": CONFIG["NOTE_MODEL_NAME"],
                     'fields': {x:'' for x in fields},
                     "options": {
                         "allowDuplicate": False,
@@ -358,8 +349,8 @@ def add_notes(notes, to_):
                     }
     for i, note1 in enumerate(notes.copy()):
       note = copy.deepcopy(note_blueprint)
-      note['fields'][NOTE_FRONT_FIELD] = note1[0]
-      note['fields'][NOTE_BACK_FIELD] = note1[1]
+      note['fields'][CONFIG["NOTE_FRONT_FIELD"]] = note1[0]
+      note['fields'][CONFIG["NOTE_BACK_FIELD"]] = note1[1]
       notes[i] = note
     
     ids = anki_connect.invoke("addNotes", notes=notes)
