@@ -23,14 +23,15 @@ class Csv:
     return {}
   
   # backup db, opens db connection, resets latest date
-  def __init__(self, download_dicts=False):
+  def __init__(self, filename=CSV_FILENAME):
     self.PROPERTIES={}
+    global CSV_FILENAME
+    CSV_FILENAME = filename
     if os.path.exists("PROPERTIES.env"):
       with open("PROPERTIES.env", "r", encoding="utf-8") as f:
         self.PROPERTIES = {x.split("=")[0]:x.split("=")[1].strip("\n") for x in f.readlines() if '=' in x and x.strip("\n")[-1]!="="}
     self.__is_connected = False
     self.__notes_data = []
-    self.__download_dicts = download_dicts
     #self.connect()
     self.books = {}
     
@@ -83,10 +84,7 @@ class Csv:
         return True
       
       # normilize lang_
-      lang_ = lang_.upper().split("-")[0].split('_')[0]
-      if lang_ not in self.PROPERTIES:
-        return False
-      
+      lang_ = lang_.upper().split("-")[0].split('_')[0] 
       return lang_ == lang
       
     
@@ -97,12 +95,12 @@ class Csv:
     # get words in discdending order
     all_words = self.__query(lang,"words")
     # print(all_words)
+    dates = [datetime.now().timestamp() for _,lang_ in all_words if lang_check_func(lang_)]
     all_words = list([word for word, lang_ in all_words if lang_check_func(lang_)])
 
 
     # get words that are older than form_date
     words = [x.lower() for x in all_words]
-    dates = [datetime.now().timestamp() for x in all_words]
     
     if len(words)==0:
       return [], []
@@ -117,10 +115,7 @@ class Csv:
         return True
       
       # normilize lang_
-      lang_ = lang_.upper().split("-")[0].split('_')[0]
-      if lang_ not in self.PROPERTIES:
-        return False
-      
+      lang_ = lang_.upper().split("-")[0].split('_')[0]    
       return lang_ == lang
     
     #print("lang selection is not working for now, come later for this")
@@ -135,7 +130,7 @@ class Csv:
     # all_notes = sorted(all_notes, key=lambda x: int(x[2]))
     
     # print(all_notes)
-    dates = [datetime.now().timestamp() for x in all_notes]
+    dates = [datetime.now().timestamp() for x,lang_ in all_notes if lang_check_func(lang_)]
     all_notes = [(x, "") for x,lang_ in all_notes if lang_check_func(lang_)]
     
     if len(all_notes)==0:

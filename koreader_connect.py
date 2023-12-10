@@ -144,7 +144,7 @@ class Koreader:
     return result
   
   # backup db, opens db connection, resets latest date
-  def __init__(self, download_dicts=False):
+  def __init__(self, download_dicts=False, filename=None):
     self.PROPERTIES={}
     if os.path.exists("PROPERTIES.env"):
       with open("PROPERTIES.env", "r", encoding="utf-8") as f:
