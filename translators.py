@@ -120,7 +120,7 @@ class TranslatorsHandler:
       to_ = "PT-BR" if to_ == "PT" else to_
       result_deepl = self.__translate_deepl(text, from_, to_)
     
-    if self.use_google:
+    if self.use_google and not result_deepl:
       # google logic
       to_ = to_.lower()
       from_ = from_.lower()
@@ -138,7 +138,7 @@ class TranslatorsHandler:
     translator, supported_langs = self.translators["google"]
     if (from_ not in supported_langs
         or to_ not in supported_langs):
-      print("[Google]: language not supported")
+      # print("[Google]: language not supported")
       return result
     try:
       result = "[Google]:"+translator.translate(
@@ -154,7 +154,7 @@ class TranslatorsHandler:
     result = None
     if (from_ not in supported_langs
         or to_ not in supported_langs):
-      print("[DeepL]: language not supported")
+      # print("[DeepL]: language not supported")
       return result
     try: 
       usage = translator.get_usage()
