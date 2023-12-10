@@ -45,16 +45,18 @@ class TranslatorsHandler:
   use_deepl=True
   to_="EN"
   from_="EN"
-  translators = {"deepl":[
-                  [deepl.Translator,[]], # constructor, args
-                  DEEPL_LANGS],
-                 "google":[
-                  [Translator,[]], 
-                  googletrans.LANGUAGES]}
+  translators = {
+    "deepl":[
+    [deepl.Translator,[]], # constructor, args
+    DEEPL_LANGS],
+    "google":[
+    [Translator,[]], 
+    googletrans.LANGUAGES]
+  }
   
   def __init__(self, config=None):
     # load previous translations
-    self.load_previous_translations()
+    self.update_previous_translations()
     self.__load_config(config)
     self.to_ = self.config.get("TO_LANG",self.to_)
     self.use_deepl = self.config.get("USE_DEEPL",self.use_deepl)
@@ -83,7 +85,7 @@ class TranslatorsHandler:
     else:
       with open("PROPERTIES.env", "r", encoding="utf-8") as f:
         self.config = {x.split("=")[0]:x.split("=")[1].strip("\n") for x in f.readlines() if '=' in x and x.strip("\n")[-1]!="="}
-  def load_previous_translations(self, pairs={},from_to="UNKNOWN"):
+  def update_previous_translations(self, pairs={},from_to="UNKNOWN"):
     try:
       with open("translations.json", "r", encoding="utf-8") as f:
         self.prev_translations = json.load(f) 
