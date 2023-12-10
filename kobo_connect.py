@@ -47,12 +47,12 @@ class Kobo:
   def get_dict_order(self):
     return {}    
   
-  def __init__(self, properties=None):
-    if properties is not None:
-      self.PROPERTIES=properties
+  def __init__(self, config=None):
+    if config is not None:
+      self.CONFIG=config
     else:
       with open("PROPERTIES.env", "r", encoding="utf-8") as f:
-        self.PROPERTIES = {x.split("=")[0]:x.split("=")[1].strip("\n") for x in f.readlines() if '=' in x and x.strip("\n")[-1]!="="}
+        self.CONFIG = {x.split("=")[0]:x.split("=")[1].strip("\n") for x in f.readlines() if '=' in x and x.strip("\n")[-1]!="="}
     self.__is_connected = False
     self.__backup_db(os.path.join(os.getcwd(),"KoboReader.sqlite"))
 
@@ -83,11 +83,11 @@ class Kobo:
       
       # normilize data and lang
       lang = lang.replace("_", "-").strip("-").upper()
-      if lang not in self.PROPERTIES["SUPPORTED_LANGS"]:
+      if lang not in self.CONFIG["SUPPORTED_LANGS"]:
         lang = lang.split("-")[0]
       if isinstance(data, str):
         data = data.replace("_", "-").strip("-").upper()
-        if data not in self.PROPERTIES["SUPPORTED_LANGS"]:
+        if data not in self.CONFIG["SUPPORTED_LANGS"]:
           data = data.split("-")[0]
         if (("-" in data and "-" not in lang)
             or ("-" in lang and "-" not in data)):
@@ -116,11 +116,11 @@ class Kobo:
       
       # normilize data and lang
       lang = lang.replace("_", "-").strip("-").upper()
-      if lang not in self.PROPERTIES["SUPPORTED_LANGS"]:
+      if lang not in self.CONFIG["SUPPORTED_LANGS"]:
         lang = lang.split("-")[0]
       if isinstance(data, str):
         data = data.replace("_", "-").strip("-").upper()
-        if data not in self.PROPERTIES["SUPPORTED_LANGS"]:
+        if data not in self.CONFIG["SUPPORTED_LANGS"]:
           data = data.split("-")[0]
       return data == lang
 

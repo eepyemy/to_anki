@@ -96,7 +96,7 @@ class Koreader:
   def __backup_data(self, dst, attempts=5):
     # priority and multiple path search, so it searches first for kobo path, and if there is none on phisical mounting points, let it search in the web
     paths_kobo = self.__get_paths_to_data(device_type="kobo")
-    paths_cloud = self.__get_paths_to_data(device_type="cloud", cloud_dir=self.PROPERTIES.get("CLOUD_DIR")) 
+    paths_cloud = self.__get_paths_to_data(device_type="cloud", cloud_dir=self.CONFIG.get("CLOUD_DIR")) 
 
     if paths_kobo["vocab"] or paths_kobo["notes"]:
       paths = paths_kobo
@@ -144,12 +144,12 @@ class Koreader:
     return result
   
   # backup db, opens db connection, resets latest date
-  def __init__(self, properties=None, download_dicts=False):
-    if properties is not None:
-      self.PROPERTIES=properties
+  def __init__(self, config=None, download_dicts=False):
+    if config is not None:
+      self.CONFIG=config
     else:
       with open("PROPERTIES.env", "r", encoding="utf-8") as f:
-        self.PROPERTIES = {x.split("=")[0]:x.split("=")[1].strip("\n") for x in f.readlines() if '=' in x and x.strip("\n")[-1]!="="}
+        self.CONFIG = {x.split("=")[0]:x.split("=")[1].strip("\n") for x in f.readlines() if '=' in x and x.strip("\n")[-1]!="="}
     self.__is_connected = False
     self.__notes_data = []
     self.__download_dicts = download_dicts
@@ -225,9 +225,9 @@ class Koreader:
       
       # normilize lang
       lang = lang.replace("_", "-").strip("-").upper()
-      if lang not in self.PROPERTIES["SUPPORTED_LANGS"]:
+      if lang not in self.CONFIG["SUPPORTED_LANGS"]:
         lang = lang.split("-")[0]
-      if lang not in self.PROPERTIES:
+      if lang not in self.CONFIG:
         return False
       
       title = self.titles.get(title_id)
@@ -238,7 +238,7 @@ class Koreader:
         return False
 
       dirs_in_path = os.path.normpath(filepath).split(os.path.sep)
-      return any(word in dirs_in_path for word in self.PROPERTIES.get(lang).split(","))
+      return any(word in dirs_in_path for word in self.CONFIG.get(lang).split(","))
     
     if not self.__is_connected:
       print("There is no DB for words, returning empty array")
@@ -262,7 +262,7 @@ class Koreader:
   def get_notes(self, lang=None) -> list:
     if lang is not None:
       lang = lang.upper().split("-")[0].split('_')[0]
-      if lang not in self.PROPERTIES:
+      if lang not in self.CONFIG:
         print("there is no folder in self.properties set to detect lang")
     
     # checks if book inside folder with lang tag
@@ -272,14 +272,14 @@ class Koreader:
       
       # normilize lang
       lang = lang.replace("_", "-").strip("-").upper()
-      if lang not in self.PROPERTIES["SUPPORTED_LANGS"]:
+      if lang not in self.CONFIG["SUPPORTED_LANGS"]:
         lang = lang.split("-")[0]
-      if lang not in self.PROPERTIES:
+      if lang not in self.CONFIG:
         return False
       
       dirs_in_path = os.path.normpath(filepath).split(os.path.sep)
       #print(dirs_in_path, filepath)
-      return any(word in dirs_in_path for word in self.PROPERTIES.get(lang).split(","))
+      return any(word in dirs_in_path for word in self.CONFIG.get(lang).split(","))
     
     #print("lang selection is not working for now, come later for this")
 

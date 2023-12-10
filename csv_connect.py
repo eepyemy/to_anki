@@ -23,14 +23,14 @@ class Csv:
     return {}
   
   # backup db, opens db connection, resets latest date
-  def __init__(self, properties=None):
+  def __init__(self, config=None):
     global CSV_FILENAME
-    if properties is not None:
-      self.PROPERTIES=properties
+    if config is not None:
+      self.CONFIG=config
     else:
       with open("PROPERTIES.env", "r", encoding="utf-8") as f:
-        self.PROPERTIES = {x.split("=")[0]:x.split("=")[1].strip("\n") for x in f.readlines() if '=' in x and x.strip("\n")[-1]!="="}
-    CSV_FILENAME = properties.get("FILENAME",CSV_FILENAME)
+        self.CONFIG = {x.split("=")[0]:x.split("=")[1].strip("\n") for x in f.readlines() if '=' in x and x.strip("\n")[-1]!="="}
+    CSV_FILENAME = config.get("FILENAME",CSV_FILENAME)
     self.__is_connected = False
     self.__notes_data = []
     #self.connect()
@@ -43,7 +43,7 @@ class Csv:
       
       try:
         with open(CSV_FILENAME, "r", encoding="utf-8", newline='\n') as csvfile:
-            spamreader = csv.reader(csvfile, delimiter=self.PROPERTIES.get("CSV_DELIMITER",','), quotechar='|')
+            spamreader = csv.reader(csvfile, delimiter=self.CONFIG.get("CSV_DELIMITER",','), quotechar='|')
             self.__data = [x for x in spamreader]
         self.__is_connected = True
       except Exception as e:
@@ -69,19 +69,19 @@ class Csv:
       
       # normilize data and lang
       lang = lang.replace("_", "-").strip("-").upper()
-      if lang not in self.PROPERTIES["SUPPORTED_LANGS"]:
+      if lang not in self.CONFIG["SUPPORTED_LANGS"]:
         lang = lang.split("-")[0]
       if isinstance(data, str):
         data = data.replace("_", "-").strip("-").upper()
-        if data not in self.PROPERTIES["SUPPORTED_LANGS"]:
+        if data not in self.CONFIG["SUPPORTED_LANGS"]:
           data = data.split("-")[0]
         if (("-" in data and "-" not in lang)
             or ("-" in lang and "-" not in data)):
           return data.split("-")[0] == lang.split("-")[0]
       return data == lang
     result = []
-    mainf = int(self.PROPERTIES.get("CSV_FIELD",0))
-    langf = int(self.PROPERTIES.get("CSV_LANG_FIELD",1))
+    mainf = int(self.CONFIG.get("CSV_FIELD",0))
+    langf = int(self.CONFIG.get("CSV_LANG_FIELD",1))
     if self.__is_connected:
       if isinstance(self.__data, list):        
         separator = lambda x: False
@@ -92,7 +92,7 @@ class Csv:
         
         result = [(x[mainf],(x[langf:langf+1] or [None])[0]) for x in self.__data if separator(x)]
         
-        count_langs = len(self.PROPERTIES["FROM_LANGS"])
+        count_langs = len(self.CONFIG["FROM_LANGS"])
         
         result = [(word,lang_) for word,lang_ in result
                   if ((count_langs==1 and lang_ is None)
