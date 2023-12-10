@@ -19,9 +19,13 @@ print(CONFIG)
 def get_param(param_name, default=None):
   return CONFIG.get(param_name, default)
 
-CONFIG["FROM_LANGS"] = [x for x in CONFIG if len(x)==2 or len(x)==3 or (len(x.split("-"))==2)]
+CONFIG["FROM_LANGS"] = [x for x in CONFIG 
+                        if len(x)==2 
+                        or len(x)==3 
+                        or (len(x.split("-"))==2)]
 
-CONFIG["FROM_LANGS"] = {x:get_param(f"{x}_IMPORT_FROM", "") for x in CONFIG["FROM_LANGS"]}
+CONFIG["FROM_LANGS"] = {x:get_param(f"{x}_IMPORT_FROM", "") 
+                        for x in CONFIG["FROM_LANGS"]}
 
 CONFIG["MAIN_DECK"] = get_param("MAIN_DECK", "Default")
 CONFIG["IMPORT_WORDS_TO"] = get_param("IMPORT_WORDS_TO", "Words_Reading")
