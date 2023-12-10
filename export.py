@@ -57,6 +57,7 @@ def main(
   TRANSLATOR = TranslatorsHandler(config=CONFIG)
   for name,trans in TRANSLATOR.translators.items():
     _, langcodes = trans
+    langcodes = {k.upper():v.upper() for k,v in langcodes.items()}
     langs.update(langcodes)
   CONFIG["SUPPORTED_LANGS"] = langs 
   
@@ -149,7 +150,7 @@ def generate_cards(words, lang, import_words_to):
   from_to = f"{lang}{CONFIG['TO_LANG']}"
   translations = [(x,t) for x,t in translations 
                   if t!="No translation available"]
-  TRANSLATOR.update_prev_translations(
+  TRANSLATOR.update_previous_translations(
     dict(translations),from_to)
   ids = anki_connect.invoke("addNotes", notes=notes)
 
@@ -243,7 +244,7 @@ def export_lang(device, lang):
   
   from_to = f"{lang}{CONFIG['TO_LANG']}"
   notes = [(x,t) for x,t in notes if t!="No translation available"]
-  TRANSLATOR.update_prev_translations(dict(notes),from_to)
+  TRANSLATOR.update_previous_translations(dict(notes),from_to)
 
   # print(notes)
   len_words = add_words(words, import_words_to, lang, IMPORT_WORDS_FROM)
