@@ -23,13 +23,14 @@ class Csv:
     return {}
   
   # backup db, opens db connection, resets latest date
-  def __init__(self, filename=CSV_FILENAME):
-    self.PROPERTIES={}
+  def __init__(self, properties=None):
     global CSV_FILENAME
-    CSV_FILENAME = filename
-    if os.path.exists("PROPERTIES.env"):
+    if properties is not None:
+      self.PROPERTIES=properties
+    else:
       with open("PROPERTIES.env", "r", encoding="utf-8") as f:
         self.PROPERTIES = {x.split("=")[0]:x.split("=")[1].strip("\n") for x in f.readlines() if '=' in x and x.strip("\n")[-1]!="="}
+    CSV_FILENAME = properties.get("FILENAME",CSV_FILENAME)
     self.__is_connected = False
     self.__notes_data = []
     #self.connect()
@@ -62,31 +63,45 @@ class Csv:
 
   # safe query vocab db
   def __query(self, lang, type):
+    def lang_check_func(data, lang=lang):
+      if lang is None:
+        return True
+      
+      # normilize data and lang
+      lang = lang.replace("_", "-").strip("-").upper()
+      if lang not in self.PROPERTIES["SUPPORTED_LANGS"]:
+        lang = lang.split("-")[0]
+      if isinstance(data, str):
+        data = data.replace("_", "-").strip("-").upper()
+        if data not in self.PROPERTIES["SUPPORTED_LANGS"]:
+          data = data.split("-")[0]
+        if (("-" in data and "-" not in lang)
+            or ("-" in lang and "-" not in data)):
+          return data.split("-")[0] == lang.split("-")[0]
+      return data == lang
+    result = []
+    mainf = int(self.PROPERTIES.get("CSV_FIELD",0))
+    langf = int(self.PROPERTIES.get("CSV_LANG_FIELD",1))
     if self.__is_connected:
-      main = int(self.PROPERTIES.get("CSV_FIELD",0))
-      langf = int(self.PROPERTIES.get("CSV_FIELD",1))
-      if isinstance(self.__data, list):
+      if isinstance(self.__data, list):        
+        separator = lambda x: False
         if type=="words":
-          # (x[langf:langf+1] or [lang])[0] = safe list.get(index) with default lang
-          return [(x[main],(x[langf:langf+1] or [None])[0]) for x in self.__data if len(x[0].strip().split())==1]
+          separator = lambda x: len(x[0].strip().split())==1  
         elif type=="notes":
-          return [(x[main],(x[langf:langf+1] or [None])[0]) for x in self.__data if len(x[0].strip().split())>1]
-      return []
-    else:
-      return []
+          separator = lambda x: len(x[0].strip().split())>1
+        
+        result = [(x[mainf],(x[langf:langf+1] or [None])[0]) for x in self.__data if separator(x)]
+        
+        count_langs = len(self.PROPERTIES["FROM_LANGS"])
+        
+        result = [(word,lang_) for word,lang_ in result
+                  if ((count_langs==1 and lang_ is None)
+                      or lang_check_func(lang_))]
+    return result
   
   # query db for all saved words, omit those that are not in target lang
   def get_words(self, lang=None) -> list:
     #print("lang selection is not working for now, come later for this")
-
-    def lang_check_func(lang_):
-      if lang_ is None:
-        return True
-      
-      # normilize lang_
-      lang_ = lang_.upper().split("-")[0].split('_')[0] 
-      return lang_ == lang
-      
     
     if not self.__is_connected:
       print("There is no DB for words, returning empty array")
@@ -95,8 +110,8 @@ class Csv:
     # get words in discdending order
     all_words = self.__query(lang,"words")
     # print(all_words)
-    dates = [datetime.now().timestamp() for _,lang_ in all_words if lang_check_func(lang_)]
-    all_words = list([word for word, lang_ in all_words if lang_check_func(lang_)])
+    dates = [datetime.now().timestamp() for _,_ in all_words]
+    all_words = list([word for word,_ in all_words])
 
 
     # get words that are older than form_date
@@ -108,16 +123,7 @@ class Csv:
     return words, dates
   
   # query db for all saved notes, omit those that are not in target lang
-  def get_notes(self, lang=None) -> list:
-
-    def lang_check_func(lang_):
-      if lang_ is None:
-        return True
-      
-      # normilize lang_
-      lang_ = lang_.upper().split("-")[0].split('_')[0]    
-      return lang_ == lang
-    
+  def get_notes(self, lang=None) -> list: 
     #print("lang selection is not working for now, come later for this")
 
     # check if have data
@@ -130,8 +136,8 @@ class Csv:
     # all_notes = sorted(all_notes, key=lambda x: int(x[2]))
     
     # print(all_notes)
-    dates = [datetime.now().timestamp() for x,lang_ in all_notes if lang_check_func(lang_)]
-    all_notes = [(x, "") for x,lang_ in all_notes if lang_check_func(lang_)]
+    dates = [datetime.now().timestamp() for _,_ in all_notes]
+    all_notes = [(x, "") for x,_ in all_notes]
     
     if len(all_notes)==0:
       return [], []

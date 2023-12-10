@@ -47,7 +47,12 @@ class Kobo:
   def get_dict_order(self):
     return {}    
   
-  def __init__(self,filename=None):
+  def __init__(self, properties=None):
+    if properties is not None:
+      self.PROPERTIES=properties
+    else:
+      with open("PROPERTIES.env", "r", encoding="utf-8") as f:
+        self.PROPERTIES = {x.split("=")[0]:x.split("=")[1].strip("\n") for x in f.readlines() if '=' in x and x.strip("\n")[-1]!="="}
     self.__is_connected = False
     self.__backup_db(os.path.join(os.getcwd(),"KoboReader.sqlite"))
 
@@ -72,14 +77,21 @@ class Kobo:
       return []
 
   def get_words(self, lang):
-    def lang_check_func(data, lang=None):
+    def lang_check_func(data, lang=lang):
       if lang is None:
         return True
       
-      # normilize lang
-      data = data.upper().strip("-").split("-")[0].split('_')[0]
-      lang = lang.upper().strip("-").split("-")[0].split('_')[0]
-
+      # normilize data and lang
+      lang = lang.replace("_", "-").strip("-").upper()
+      if lang not in self.PROPERTIES["SUPPORTED_LANGS"]:
+        lang = lang.split("-")[0]
+      if isinstance(data, str):
+        data = data.replace("_", "-").strip("-").upper()
+        if data not in self.PROPERTIES["SUPPORTED_LANGS"]:
+          data = data.split("-")[0]
+        if (("-" in data and "-" not in lang)
+            or ("-" in lang and "-" not in data)):
+          return data.split("-")[0] == lang.split("-")[0]
       return data == lang
 
     if not self.__is_connected:
@@ -89,8 +101,8 @@ class Kobo:
     all_words = self.__query("SELECT * FROM WordList ORDER BY DateCreated")
     all_words = list(all_words)
 
-    words = [word for word,_,lang_,_ in all_words if lang_check_func(lang_,lang)]
-    dates = [date_to_ms(str_to_date(date)) for _,_,lang_,date in all_words if lang_check_func(lang_,lang)]
+    words = [word for word,_,lang_,_ in all_words if lang_check_func(lang_)]
+    dates = [date_to_ms(str_to_date(date)) for _,_,lang_,date in all_words if lang_check_func(lang_)]
     
     if len(words)==0:
       return [], []
@@ -98,14 +110,18 @@ class Kobo:
     return words, dates
   
   def get_notes(self, lang):
-    def lang_check_func(data, lang=None):
+    def lang_check_func(data, lang=lang):
       if lang is None:
         return True
       
-      # normilize lang
-      data = data.upper().strip("-").split("-")[0].split('_')[0]
-      lang = lang.upper().strip("-").split("-")[0].split('_')[0]
-      
+      # normilize data and lang
+      lang = lang.replace("_", "-").strip("-").upper()
+      if lang not in self.PROPERTIES["SUPPORTED_LANGS"]:
+        lang = lang.split("-")[0]
+      if isinstance(data, str):
+        data = data.replace("_", "-").strip("-").upper()
+        if data not in self.PROPERTIES["SUPPORTED_LANGS"]:
+          data = data.split("-")[0]
       return data == lang
 
     if not self.__is_connected:

@@ -144,11 +144,12 @@ class Koreader:
     return result
   
   # backup db, opens db connection, resets latest date
-  def __init__(self, download_dicts=False, filename=None):
-    self.PROPERTIES={}
-    if os.path.exists("PROPERTIES.env"):
+  def __init__(self, properties=None, download_dicts=False):
+    if properties is not None:
+      self.PROPERTIES=properties
+    else:
       with open("PROPERTIES.env", "r", encoding="utf-8") as f:
-        self.PROPERTIES = {x.split("=")[0]:x.split("=")[1].strip() for x in f.readlines() if '=' in x and x.strip()[-1]!="="}
+        self.PROPERTIES = {x.split("=")[0]:x.split("=")[1].strip("\n") for x in f.readlines() if '=' in x and x.strip("\n")[-1]!="="}
     self.__is_connected = False
     self.__notes_data = []
     self.__download_dicts = download_dicts
@@ -223,7 +224,9 @@ class Koreader:
         return True
       
       # normilize lang
-      lang = lang.upper().split("-")[0].split('_')[0]
+      lang = lang.replace("_", "-").strip("-").upper()
+      if lang not in self.PROPERTIES["SUPPORTED_LANGS"]:
+        lang = lang.split("-")[0]
       if lang not in self.PROPERTIES:
         return False
       
@@ -268,7 +271,9 @@ class Koreader:
         return True
       
       # normilize lang
-      lang = lang.upper().split("-")[0].split('_')[0]
+      lang = lang.replace("_", "-").strip("-").upper()
+      if lang not in self.PROPERTIES["SUPPORTED_LANGS"]:
+        lang = lang.split("-")[0]
       if lang not in self.PROPERTIES:
         return False
       
