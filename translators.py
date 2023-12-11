@@ -43,41 +43,61 @@ class TranslatorsHandler:
   prev_translations={}
   to_="EN"
   from_="EN"
-  translators = {
-    "deepl":{
-      "to_invoke":"_translate_deepl",
-      "use":True,
-      "methods":{
-        "constructor":[deepl.Translator, {"auth_key":None}],
-        "close": ["close", {}]
-        }, 
-      "supported_langs":DEEPL_LANGS
-      },
-    "google":{
-      "to_invoke":"_translate_google",
-      "use":True,
-      "methods":{
-        "constructor":[Translator, {}],
-        }, 
-      "supported_langs":googletrans.LANGUAGES
-      },
-    "generic":{
-      "to_invoke":"_translate_generic",
-      "use":False,
-      "methods":{
-        "constructor":[dict, {}],
-        }, 
-      "supported_langs":googletrans.LANGUAGES
-    }
-    }
-  
-  
+
+  def __initialize_translators(self):
+      
+      self.translators = {
+      "deepl":{
+        "use":False,
+        "methods":{
+          "constructor":[deepl.Translator, {
+            "auth_key":self.config.get(
+              "DEEPL_AUTH_KEY")}],
+          "close": ["close", {}]
+          }, 
+        "supported_langs":DEEPL_LANGS
+        },
+      "google":{
+        "use":False,
+        "methods":{
+          "constructor":[Translator, {}],
+          }, 
+        "supported_langs":googletrans.LANGUAGES
+        },
+      "generic":{
+        "use":False,
+        "methods":{
+          "constructor":[dict, {}],
+          }, 
+        "supported_langs":googletrans.LANGUAGES
+      }
+      }
+      
+      
+      for name, config in self.translators.items():
+        
+        config["use"] = self.config.get(
+          f"USE_{name.upper()}",config.get("use", False))
+        to_invoke_name = f"_translate_{name}"
+        config["to_invoke"] = getattr(
+          self, to_invoke_name, 
+          lambda *args, **kwargs: print(f"{name} needs a translation function implemented and linked"))
+
+        methods = config.get("methods",{})
+        constructor, kwargs = methods.get("constructor",[None, None])
+        if constructor:  
+          config["instance"] = (
+            constructor(**kwargs))
+
+        self.translators[name] = config
+ 
   def __init__(self, config=None):
     # load previous translations
     self.update_previous_translations()
     self.__load_config(config)
     self.to_ = self.config.get("TO_LANG",self.to_)
     self.__initialize_translators()
+
   def close(self):
     try:
       for translator in self.translators.values():
@@ -90,32 +110,6 @@ class TranslatorsHandler:
             close(**kwargs)
     except Exception as e:
       print("There was a problem closing translator...", e)        
-    
-  def __initialize_translators(self):
-    
-    for name, config in self.translators.items():
-      
-      config["use"] = self.config.get(f"USE_{name.upper()}",config.get("use", False))
-      to_invoke_name = config.get("to_invoke")
-      if to_invoke_name:
-        config["to_invoke"] = getattr(self, to_invoke_name, lambda *args, **kwargs: print(f"{name} needs a translation function implemented and linked"))
-      methods = config.get("methods",{})
-      for method_name, value in methods.items():
-        method, kwargs = value
-        #print(method, kwargs)
-        if ("auth_key" in kwargs and 
-          not kwargs.get("auth_key")):
-          config["methods"][method_name][1]["auth_key"] = (
-            self.config.get(f"{name.upper()}_AUTH_KEY"))
-      #print(config)
-      methods = config.get("methods",{})
-      constructor, kwargs = methods.get("constructor",[None, None])
-      if constructor:  
-        config["instance"] = (
-          constructor(**kwargs))
-
-      self.translators[name] = config
-  
 
   def __load_config(self, config=None):
     if config is not None:
