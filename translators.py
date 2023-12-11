@@ -41,44 +41,82 @@ DEEPL_LANGS = {
 
 class TranslatorsHandler:
   prev_translations={}
-  use_google=True
-  use_deepl=True
   to_="EN"
   from_="EN"
   translators = {
-    "deepl":[
-    [deepl.Translator,[]], # constructor, args
-    DEEPL_LANGS],
-    "google":[
-    [Translator,[]], 
-    googletrans.LANGUAGES]
-  }
+    "deepl":{
+      "to_invoke":"_translate_deepl",
+      "use":True,
+      "methods":{
+        "constructor":[deepl.Translator, {"auth_key":None}],
+        "close": ["close", {}]
+        }, 
+      "supported_langs":DEEPL_LANGS
+      },
+    "google":{
+      "to_invoke":"_translate_google",
+      "use":True,
+      "methods":{
+        "constructor":[Translator, {}],
+        }, 
+      "supported_langs":googletrans.LANGUAGES
+      },
+    "generic":{
+      "to_invoke":"_translate_generic",
+      "use":False,
+      "methods":{
+        "constructor":[dict, {}],
+        }, 
+      "supported_langs":googletrans.LANGUAGES
+    }
+    }
+  
   
   def __init__(self, config=None):
     # load previous translations
     self.update_previous_translations()
     self.__load_config(config)
     self.to_ = self.config.get("TO_LANG",self.to_)
-    self.use_deepl = self.config.get("USE_DEEPL",self.use_deepl)
-    self.use_google = self.config.get("USE_GOOGLE",self.use_google)
-    self.translators["deepl"][0][1].append(
-      self.config.get("DEEP_L_AUTH_KEY", ""))
     self.__initialize_translators()
   def close(self):
     try:
-      translator, _ = self.translators["deepl"] 
-      if translator:
-        translator.close()
+      for translator in self.translators.values():
+        methods = translator.get("methods",{})
+        close_method_name, kwargs = methods.get("close",[None, None])
+        if close_method_name: 
+          instance = translator.get("instance")
+          if instance:
+            close = getattr(instance, close_method_name)
+            close(**kwargs)
     except Exception as e:
-      print("something wrong with closing translator...", e)
-
+      print("There was a problem closing translator...", e)        
+    
   def __initialize_translators(self):
+    
     for name, config in self.translators.items():
-      constructor, langs = config
-      constructor, args = constructor
-      self.translators[name] = [
-        constructor(*args),
-        langs]
+      
+      config["use"] = self.config.get(f"USE_{name.upper()}",config.get("use", False))
+      to_invoke_name = config.get("to_invoke")
+      if to_invoke_name:
+        config["to_invoke"] = getattr(self, to_invoke_name, lambda *args, **kwargs: print(f"{name} needs a translation function implemented and linked"))
+      methods = config.get("methods",{})
+      for method_name, value in methods.items():
+        method, kwargs = value
+        #print(method, kwargs)
+        if ("auth_key" in kwargs and 
+          not kwargs.get("auth_key")):
+          config["methods"][method_name][1]["auth_key"] = (
+            self.config.get(f"{name.upper()}_AUTH_KEY"))
+      #print(config)
+      methods = config.get("methods",{})
+      constructor, kwargs = methods.get("constructor",[None, None])
+      if constructor:  
+        config["instance"] = (
+          constructor(**kwargs))
+
+      self.translators[name] = config
+  
+
   def __load_config(self, config=None):
     if config is not None:
       self.config=config
@@ -97,11 +135,11 @@ class TranslatorsHandler:
     with open("translations.json", "w", encoding="utf-8") as f:
       json.dump(self.prev_translations, f)
 
-  def translate(self, text, from_=None, to_=None, use_google=None, use_deepl=None):
+  def translate(self, text, from_=None, to_=None, **kwargs):
     from_ = from_ if from_ else self.from_
     to_ = to_ if to_ else self.to_
-    use_google = use_google if use_google else self.use_google
-    use_deepl = use_deepl if use_deepl else self.use_deepl
+    for name, translator in self.translators.items():
+      self.translators[name]["use"] = kwargs.get(f"use_{name}",translator.get("use",False))
     
     # skipping translating if already translated it before
     from_to = f"{from_}{to_}"
@@ -110,52 +148,61 @@ class TranslatorsHandler:
         return self.prev_translations[from_to][text]
 
     result = "No translation available"
-    result_google = None
-    result_deepl = None
-    if self.use_deepl:
-      # deepl logic
-      to_ = to_.upper()
-      from_ = from_.upper()
-      to_ = "EN-US" if to_ == "EN" else to_
-      to_ = "PT-BR" if to_ == "PT" else to_
-      result_deepl = self.__translate_deepl(text, from_, to_)
+    results = []
+    for translator in self.translators.values():
+      result = None
+      if translator.get("use"):
+        result = translator.get("to_invoke")(text, from_, to_)
+      results.append(result)
+      if any(results):
+        break
+
+    results = [x for x in results if x]
+    if results:
+      result = results[0]
     
-    if self.use_google and not result_deepl:
-      # google logic
-      to_ = to_.lower()
-      from_ = from_.lower()
-      result_google = self.__translate_google(text, from_, to_)
-    tempo = result_deepl if result_deepl else result_google
-    result = tempo if tempo else result
-     
     return result
   
-  def __translate_google(self,text,from_=None,to_=None):
+  def __check_langs_supported(self, name, from_, to_):
+    supported_langs = self.translators.get(name,{}).get("supported_langs", {})
+    result = (from_ in supported_langs
+              and to_ in supported_langs)
+      # print(f"[{name}]: language not supported")
+    return result
+  def _translate_google(self,text,from_=None,to_=None):
     from_ = from_ if from_ else self.from_
     to_ = to_ if to_ else self.to_
+    to_ = to_.lower()
+    from_ = from_.lower()
     
     result = None
-    translator, supported_langs = self.translators["google"]
-    if (from_ not in supported_langs
-        or to_ not in supported_langs):
-      # print("[Google]: language not supported")
+    name = "google"
+    translator = self.translators[name]["instance"]
+    if not self.__check_langs_supported(
+      name, from_, to_):
       return result
+    
     try:
       result = "[Google]:"+translator.translate(
         text, src=from_, dest=to_).text
       return result
     except Exception as e:
-      print("There was a problem with Google Translate, ", e)
-  def __translate_deepl(self,text,from_=None,to_=None):
+      print(f"There was a problem with {name}, ", e)
+  def _translate_deepl(self,text,from_=None,to_=None):
     from_ = from_ if from_ else self.from_
     to_ = to_ if to_ else self.to_
+    to_ = to_.upper()
+    from_ = from_.upper()
+    to_ = "EN-US" if to_ == "EN" else to_
+    to_ = "PT-BR" if to_ == "PT" else to_
     
-    translator, supported_langs = self.translators["deepl"]
     result = None
-    if (from_ not in supported_langs
-        or to_ not in supported_langs):
-      # print("[DeepL]: language not supported")
+    name = "deepl"
+    translator = self.translators[name]["instance"]
+    if not self.__check_langs_supported(
+      name, from_, to_):
       return result
+    
     try: 
       usage = translator.get_usage()
       if not text:
@@ -167,13 +214,27 @@ class TranslatorsHandler:
 
       return "[DeepL]:"+translator.translate_text(
         text, target_lang=to_, 
-        source_lang=from_.upper(),
+        source_lang=from_,
         formality="prefer_less").text
     except Exception as e:
       print("There was a problem with DeepL, ",e)
-
+  def _translate_generic(self,text,from_=None,to_=None):
+    from_ = from_ if from_ else self.from_
+    to_ = to_ if to_ else self.to_
+    to_ = to_.lower()
+    from_ = from_.lower()
+    
+    result = None
+    name = "generic"
+    translator = self.translators[name]["instance"]
+    if not self.__check_langs_supported(
+      name, from_, to_):
+      return result   
+    try: 
+      return "Generic translation"
+    except Exception as e:
+      print("There was a problem with DeepL, ",e)
 
 if __name__ == "__main__":
   a = TranslatorsHandler()
-  print(a.translate("я даже не знаю что сказать", to_="EN", from_="RU"))
-  a.close()
+  print(a.translate("я даже не знаю что сказать АФИГЕТЬ!", to_="EN", from_="RU"))
