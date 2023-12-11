@@ -55,8 +55,8 @@ def main(
   # initializing translator
   langs = {}
   TRANSLATOR = TranslatorsHandler(config=CONFIG)
-  for name,trans in TRANSLATOR.translators.items():
-    _, langcodes = trans
+  for trans in TRANSLATOR.translators.values():
+    langcodes = trans.get("supported_langs",{})
     langcodes = {k.upper():v.upper() for k,v in langcodes.items()}
     langs.update(langcodes)
   CONFIG["SUPPORTED_LANGS"] = langs 
