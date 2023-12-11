@@ -43,7 +43,7 @@ class Csv:
       
       try:
         with open(CSV_FILENAME, "r", encoding="utf-8", newline='\n') as csvfile:
-            spamreader = csv.reader(csvfile, delimiter=self.CONFIG.get("CSV_DELIMITER",','), quotechar='|')
+            spamreader = csv.reader(csvfile, delimiter=self.CONFIG.get("CSV_DELIMITER",','), quotechar=self.CONFIG.get("CSV_QUOTECHAR",'|'))
             self.__data = [x for x in spamreader]
         self.__is_connected = True
       except Exception as e:
