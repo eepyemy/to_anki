@@ -1,20 +1,20 @@
 from time import sleep
 import json
 import os
+import copy
+import traceback
+
 import anki_connect
 import kobo_connect
 import koreader_connect
 import json_connect, csv_connect
-import deepl
-import copy
-from googletrans import Translator
-import traceback
 from utility_funcs import *
+
 from init import *
+from translators import TranslatorsHandler
+
 import typer
 from rich import print
-from translators import TranslatorsHandler
-from collections import ChainMap
 
 app = typer.Typer()
 
