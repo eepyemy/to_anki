@@ -46,10 +46,18 @@ class TranslatorsHandler:
   to_="EN"
   from_="EN"
 
+  def update_translators(self):
+    self.to_ = self.config.get("TO_LANG",self.to_)
+    for name, config in self.translators.items():
+        
+        config["use"] = self.config.get(
+          f"USE_{name.upper()}",config.get("use", False))
+  
   def __initialize_translators(self):
       
       self.translators = {
       "deepl":{
+        "needs_auth_key":True,
         "use":False,
         "methods":{
           "constructor":[deepl.Translator, {
@@ -60,6 +68,7 @@ class TranslatorsHandler:
         "supported_langs":DEEPL_LANGS
         },
       "google":{
+        "needs_auth_key":False,
         "use":False,
         "methods":{
           "constructor":[Translator, {}],
@@ -67,6 +76,7 @@ class TranslatorsHandler:
         "supported_langs":googletrans.LANGUAGES
         },
       "generic":{
+        "needs_auth_key":False,
         "use":False,
         "methods":{
           "constructor":[dict, {}],
@@ -242,8 +252,11 @@ class TranslatorsHandler:
     to_ = to_ if to_ else self.to_
     to_ = to_.upper()
     from_ = from_.upper()
+    
     to_ = "EN-US" if to_ == "EN" else to_
     to_ = "PT-BR" if to_ == "PT" else to_
+    from_ = from_.split("-")[0]
+    
     
     result = None
     name = "deepl"
