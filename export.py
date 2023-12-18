@@ -15,6 +15,8 @@ from translators import TranslatorsHandler
 
 import typer
 from rich import print
+import inquirer
+from inquirer import *
 
 app = typer.Typer()
 
@@ -53,14 +55,15 @@ def main(
     sleep(sleep_sec)
   
   # initializing translator
-  langs = {}
   TRANSLATOR = TranslatorsHandler(config=CONFIG)
-  for trans in TRANSLATOR.translators.values():
-    langcodes = trans.get("supported_langs",{})
-    langcodes = {k.upper():v.upper() for k,v in langcodes.items()}
-    langs.update(langcodes)
-  CONFIG["SUPPORTED_LANGS"] = langs 
+  codes = TRANSLATOR.get_supported_langs(type="codes")
+  a = TRANSLATOR.get_supported_langs(type="names")
   
+  CONFIG["SUPPORTED_LANGS"] = codes
+  print(a)
+  #CONFIG["SUPPORTED_LANGS"] = dict(sorted(list(set(langs.items())), key=lambda x: x[1])) 
+  user_friendly_setup()
+  return None
   # setting device
   device = None
   if "DEVICE" not in CONFIG and type==None:
@@ -111,6 +114,50 @@ def main(
     json.dump(sync_dates, k)
   
   TRANSLATOR.close()
+
+
+def user_friendly_setup():
+  codes = CONFIG["SUPPORTED_LANGS"]
+  langs = [(x,y) for y,x in codes.items()]
+  
+  
+  basic_setup = [
+    inquirer.List(
+      "DEVICE","Select default device for export of notes",choices=["koreader", "kobo", "csv", "json"]
+    ),
+    inquirer.Checkbox(
+        "FROM_LANGS",
+        message="Select default input languages (Space -> Select, Enter -> Confirm)",
+        choices=langs,
+    ),
+    inquirer.List(
+        "TO_LANGUAGE",
+        message="Select default output language",
+        choices=langs,
+    )
+  ]
+  
+  anki_custom_setup=[
+    inquirer.Text("MAIN_DECK", "Main deck name (default:Language Learning)"),
+    inquirer.Text("IMPORT_WORDS_TO", "Words deck name(default:Words_Reading)"),inquirer.Text("WORD_MODEL_NAME", "Anki model name for words cards(default:Anki Learn words)"),
+    
+    inquirer.Text("IMPORT_NOTES_TO", "Sentences deck name(default:Notes_Reading)"),
+    inquirer.Text("NOTE_MODEL_NAME", "Anki model name for sentences cards(default:Anki Learn sentences)"),
+    
+    inquirer.Text("IMPORT_STUDY_TO", "Study questions deck name(default:Study)"),
+    inquirer.Text
+    ("STUDY_MODEL_NAME", "Anki model name for study questions cards(default:Anki Learn sentences)")
+    
+  ]
+  
+  answers = inquirer.prompt(basic_setup)
+  koreader_specific = [inquirer.Text(x.upper(),f"Enter comma separated folder names for books in {codes[x]} language",ignore=lambda _: answers["DEVICE"]!="koreader") for x in answers["FROM_LANGS"]]
+  answers.update(inquirer.prompt(koreader_specific))
+  do_anki_setup = confirm("Do you want to customize anki related settings?")
+  if do_anki_setup:
+    answers.update(prompt(anki_custom_setup))
+  
+  print(answers)
 
 
 # generate cards from dicts or from google translate if dicts are not available
@@ -384,9 +431,10 @@ def get_new_items(l, dates, to_str_delegate=ms_to_str):
   return new_items, new_dates
 
 if __name__ == "__main__":
-  app()
+  
   try:
     #main()
+    app()
     pass
   except Exception as e:
     if "No connection could be made" in str(e):
