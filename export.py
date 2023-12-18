@@ -204,7 +204,7 @@ def user_friendly_setup(first_setup=False, save=True, skip=False):
   tr.pop("TRANS_USE")
   answers = update(answers, tr)
   api = []
-  for name, options in CONFIG["TRANSLATOR"].get_translators().items(): 
+  for name, options in CONFIG["TRANSLATOR"].translators.items(): 
     
     doesnt_need = not options["needs_auth_key"]
     not_use = not answers.get(f"USE_{name.upper()}", False)
