@@ -2,6 +2,8 @@ import googletrans
 from googletrans import Translator
 import deepl
 import json
+from langcodes import *
+import langcodes
 
 DEEPL_LANGS = {
     "BG":"Bulgarian",
@@ -9,9 +11,8 @@ DEEPL_LANGS = {
     "DA":"Danish",
     "DE":"German",
     "EL":"Greek",
-    "EN":"English",
-    "EN-GB":"English(US)",
-    "EN-US":"English(GB)",
+    "EN-GB":"English(GB)",
+    "EN-US":"English(US)",
     "ES":"Spanish",
     "ET":"Estonian",
     "FI":"Finnish",
@@ -26,7 +27,6 @@ DEEPL_LANGS = {
     "NB":"Norwegian",
     "NL":"Dutch",
     "PL":"Polish",
-    "PT":"Portuguese",
     "PT-BR":"Portuguese(BR)",
     "PT-PT":"Portuguese(PT)",
     "RO":"Romanian",
@@ -36,7 +36,7 @@ DEEPL_LANGS = {
     "SV":"Swedish",
     "TR":"Turkish",
     "UK":"Ukrainian",
-    "ZH":"Chinese(simplified)"
+    "ZH":"Chinese (simplified)"
 }
 
 class TranslatorsHandler:
@@ -97,7 +97,7 @@ class TranslatorsHandler:
     self.__load_config(config)
     self.to_ = self.config.get("TO_LANG",self.to_)
     self.__initialize_translators()
-
+  
   def close(self):
     try:
       for translator in self.translators.values():
@@ -128,7 +128,60 @@ class TranslatorsHandler:
     self.prev_translations[from_to].update(dict(pairs))
     with open("translations.json", "w", encoding="utf-8") as f:
       json.dump(self.prev_translations, f)
-
+  
+  def get_supported_langs(self, type="names"):
+  
+    lang_pairs = []
+    [lang_pairs.extend(trans.get("supported_langs",[]).items()) for trans in self.translators.values()]
+    lang_pairs = [
+      (standardize_tag(x.lower(), True),Language.get(standardize_tag(x.lower()), True).display_name()) 
+      for x,y in lang_pairs]
+    unique_tags = list(set([tag for tag,_ in lang_pairs]))
+    same_tags = {tag:[] for tag in unique_tags}
+    for tag in unique_tags:
+      keep_looking = True
+      other_tags = unique_tags.copy()
+      other_tags.pop(other_tags.index(tag))
+      while keep_looking:
+        matched_tag, distance = closest_match(tag, other_tags, max_distance=0)
+        
+        if distance==0:
+          same_tags[tag].append(matched_tag)
+          other_tags.pop(other_tags.index(matched_tag))
+        
+        if distance!=0 and len(same_tags[tag])==0:
+          del same_tags[tag]
+        
+        keep_looking = distance==0
+    for key in list(same_tags):
+      if "-" not in key:
+        del same_tags[key]
+      else:
+        if len(key.replace("-", ""))!=4:
+          del same_tags[key]
+        
+    for tag in list(same_tags):
+      #print(tags)
+      replacements = list(same_tags.get(tag, []))
+      for replacement in replacements:
+        if replacement in same_tags:
+          del same_tags[replacement]
+    
+    to_del = []
+    for replacements in same_tags.values():
+      to_del.extend(replacements)
+    
+    lang_pairs = {x:y for x,y in lang_pairs if x not in to_del}
+    if type=="names":
+      lang_pairs = [(y,x) for x,y in lang_pairs.items()]
+      lang_pairs = sorted(lang_pairs, key=lambda x: x[0])
+    elif type=="codes":
+      lang_pairs = [(x,y) for x,y in lang_pairs.items()]
+      lang_pairs = sorted(lang_pairs, key=lambda x: x[1])
+    lang_pairs = {x:y for x,y in lang_pairs}
+    return lang_pairs
+    
+  
   def translate(self, text, from_=None, to_=None, **kwargs):
     from_ = from_ if from_ else self.from_
     to_ = to_ if to_ else self.to_
