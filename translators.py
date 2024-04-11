@@ -69,7 +69,7 @@ class TranslatorsHandler:
       },
     "google":{
       "needs_auth_key":False,
-      "use":False,
+      "use":True,
       "methods":{
         "constructor":[Translator, {}],
         }, 
@@ -308,4 +308,5 @@ class TranslatorsHandler:
 
 if __name__ == "__main__":
   a = TranslatorsHandler()
+  a.setup_translators()
   print(a.translate("я даже не знаю что сказать АФИГЕТЬ!", to_="EN", from_="RU"))

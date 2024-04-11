@@ -44,10 +44,14 @@ CONFIG["TO_LANG"] = get_param("TO_LANG")
 CONFIG["USE_GOOGLE"]=get_param("USE_GOOGLE", False)
 CONFIG["USE_DICTS"]=get_param("USE_DICTS", True)
 CONFIG["TRY_DOWNLOAD"]=False
+CONFIG["CUSTOM_LANGS"]=get_param("CUSTOM_LANGS","")
+
+CONFIG["CUSTOM_LANGS"] = {x.split(":")[0]:x.split(":")[1] for x in CONFIG["CUSTOM_LANGS"].split(",")}
+print(CONFIG["CUSTOM_LANGS"])
 
 def get_dicts():
   dicts = []
-  dicts = glob("dict/**/*.ifo") + glob("dict/**/**/*.ifo")
+  dicts = glob("dict/**/*.ifo") + glob("dict/**/**/*.ifo") + glob("dict/**/**/**/*.ifo")
   return dicts
 
 CONFIG["DICT_PATHS"] = get_dicts()
@@ -93,25 +97,27 @@ def load_dicts_ordered(device):
 
   #print(custom_dicts_order)
   #print(dicts)
-  dicts = {os.path.basename(x):Dictionary(x[:-4]) 
+  dicts = {x:Dictionary(x[:-4]) 
                      for x in CONFIG["DICT_PATHS"]}
   dicts_order = device.get_dict_order()
   dicts_order = {os.path.basename(x):y 
                  for x,y in dicts_order.items()}
   dicts_order.update(custom_dicts_order)
 
-  #print(dicts_order)
+  print(dicts)
   if dicts_order or dicts:
     temp_len = max(list(dicts_order.values())+[len(dicts)])
   else:
     temp_len = 0
   sorted_dicts = [1]*temp_len
-  for dn,d in dicts.items():
-    place = dicts_order.get(dn)
+  for dpath,d in dicts.items():
+    dname = os.path.basename(dpath)
+    place = dicts_order.get(dname)
     if not place:
       sorted_dicts.append(d)
       continue
     sorted_dicts[place-1] = d
   sorted_dicts = [x for x in sorted_dicts 
                   if isinstance(x, Dictionary)]
+  
   return sorted_dicts

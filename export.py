@@ -61,15 +61,20 @@ def main(
   codes = TRANSLATOR.get_supported_langs(type="codes")
   a = TRANSLATOR.get_supported_langs(type="names")
   CONFIG["TRANSLATOR"] = TRANSLATOR
-  CONFIG["SUPPORTED_LANGS"] = codes
-  print(a)
+  CONFIG["SUPPORTED_LANGS"] = CONFIG["CUSTOM_LANGS"]
+  CONFIG["SUPPORTED_LANGS"].update(codes)
+  print(CONFIG["SUPPORTED_LANGS"])
   #CONFIG["SUPPORTED_LANGS"] = dict(sorted(list(set(langs.items())), key=lambda x: x[1])) 
+  print(CONFIG["FROM_LANGS"])
   user_friendly_setup()
+  CONFIG["FROM_LANGS"] = {x.upper():get_param(f"{x.upper()}_IMPORT_FROM", "") for x in CONFIG["FROM_LANGS"]}
+  print(CONFIG["FROM_LANGS"])
+
   TRANSLATOR.update_config(CONFIG)
   TRANSLATOR.setup_translators()
-  print(TRANSLATOR.translate("Hello my name is Emy", "EN", "NL"))
+  #print(TRANSLATOR.translate("Hello my name is Emy", "EN", "NL"))
   # TODO remove this return when finished
-  return None
+  
   # setting device
   device = None
   if "DEVICE" not in CONFIG and type==None:
@@ -94,14 +99,15 @@ def main(
 
   # preparing dicts
   DICTS = load_dicts_ordered(device)
-
+  print(CONFIG["SUPPORTED_LANGS"])
+  
   # loading previous sync dates
   sync_dates = get_sync_dates()
   
   # generating cards for every FROM language
   for lang in CONFIG["FROM_LANGS"]:
     print()
-    print(f"Exporting from {lang} language...")
+    print(f"Exporting from {get_lang_name(lang)} language...")
     print()
     sync_dates.extend(export_lang(device, lang))
 
@@ -120,6 +126,10 @@ def main(
     json.dump(sync_dates, k)
   
   TRANSLATOR.close()
+
+def get_lang_name(code):
+  codes = {x.upper():y for x,y in CONFIG["SUPPORTED_LANGS"].items()}
+  return codes.get(code.upper(), code)
 
 # TODO migrate it to init.py
 def user_friendly_setup(first_setup=False, save=True, skip=False):
@@ -236,11 +246,11 @@ def user_friendly_setup(first_setup=False, save=True, skip=False):
   if save:
     to_save = CONFIG
     to_save.update(answers)
-    to_save.pop("TRY_DOWNLOAD",None)
-    to_save.pop("DICT_PATHS",None)
-    to_save.pop("SUPPORTED_LANGS",None)
-    to_save.pop("FROM_LANGS",None)
-    to_save.pop("TRANSLATOR",None)
+    #to_save.pop("TRY_DOWNLOAD",None)
+    #to_save.pop("DICT_PATHS",None)
+    #to_save.pop("SUPPORTED_LANGS",None)
+    #to_save.pop("FROM_LANGS",None)
+    #to_save.pop("TRANSLATOR",None)
     print(to_save)
     
     # TODO save CONFIG to PROPERTIES.env file
@@ -358,8 +368,9 @@ def export_lang(device, lang):
   IMPORT_WORDS_FROM = CONFIG["FROM_LANGS"][lang]
   if not IMPORT_WORDS_FROM:
     CONFIG["SKIP_REPEATS_CHECK"] = True
-  import_notes_to= f"{CONFIG['MAIN_DECK']}::{lang}_{CONFIG['TO_LANG']}::{CONFIG['IMPORT_NOTES_TO']}"
-  import_words_to= f"{CONFIG['MAIN_DECK']}::{lang}_{CONFIG['TO_LANG']}::{CONFIG['IMPORT_WORDS_TO']}"
+  to_lang = CONFIG["TO_LANG"]
+  import_notes_to= f"{CONFIG['MAIN_DECK']}::{get_lang_name(lang)}_{get_lang_name(to_lang)}::{CONFIG['IMPORT_NOTES_TO']}"
+  import_words_to= f"{CONFIG['MAIN_DECK']}::{get_lang_name(lang)}_{get_lang_name(to_lang)}::{CONFIG['IMPORT_WORDS_TO']}"
   anki_connect.invoke("createDeck", deck=import_notes_to)
   anki_connect.invoke("createDeck", deck=import_words_to)
   
