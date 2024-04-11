@@ -34,7 +34,7 @@ def main(
   use_google: bool = CONFIG["USE_GOOGLE"], 
   skip_import : bool = CONFIG.get("SKIP_REPEATS_CHECK", False), 
   download_dicts : bool = CONFIG["TRY_DOWNLOAD"], 
-  use_deepl:bool = CONFIG.get("USE_DEEPL",True),
+  use_deepl:bool = CONFIG.get("USE_DEEPL", True),
   use_dicts:bool = CONFIG.get("USE_DICTS", True)
   ):
   
@@ -204,22 +204,28 @@ def user_friendly_setup(first_setup=False, save=True, skip=False):
   tr.pop("TRANS_USE")
   answers = update(answers, tr)
   api = []
+  not_used_tranlators = {}
   for name, options in CONFIG["TRANSLATOR"].translators.items(): 
     
     doesnt_need = not options["needs_auth_key"]
     not_use = not answers.get(f"USE_{name.upper()}", False)
+    if not_use:
+      not_used_tranlators[f"USE_{name.upper()}"] = False
     has_api = not ""==CONFIG.get(f"{name.upper()}_AUTH_KEY", "")
     
-    ign = not_use or doesnt_need or has_api
-    print(name, doesnt_need, not_use, has_api, ign)
+    ignore_ = not_use or doesnt_need or has_api
+    print(name, ("no auth",doesnt_need), ("dont use",not_use), ("has api",has_api), ("ignore", ignore_))
     question = inquirer.Text(
       f"{name.upper()}_AUTH_KEY",
       f"Please enter API key for {name.title()}",
       default="",
-      ignore=ign
+      ignore=ignore_
     )
     api.append(question)
+  print(answers)
+  print(CONFIG)
   answers = update(answers, prompt(api))
+  answers = update(answers, not_used_tranlators)
   
   do_anki_setup = list_input("[optional] Do you want to customize anki related settings?",choices=[ ("No", False),("Yes", True)], default=False)
   if do_anki_setup:
