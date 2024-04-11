@@ -65,7 +65,9 @@ def main(
   print(a)
   #CONFIG["SUPPORTED_LANGS"] = dict(sorted(list(set(langs.items())), key=lambda x: x[1])) 
   user_friendly_setup()
-  
+  TRANSLATOR.update_config(CONFIG)
+  TRANSLATOR.setup_translators()
+  print(TRANSLATOR.translate("Hello my name is Emy", "EN", "NL"))
   # TODO remove this return when finished
   return None
   # setting device
@@ -223,7 +225,7 @@ def user_friendly_setup(first_setup=False, save=True, skip=False):
     )
     api.append(question)
   print(answers)
-  print(CONFIG)
+  #print(CONFIG)
   answers = update(answers, prompt(api))
   answers = update(answers, not_used_tranlators)
   
