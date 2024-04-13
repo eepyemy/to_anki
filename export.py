@@ -35,7 +35,8 @@ def main(
   skip_import : bool = CONFIG.get("SKIP_REPEATS_CHECK", False), 
   download_dicts : bool = CONFIG["TRY_DOWNLOAD"], 
   use_deepl:bool = CONFIG.get("USE_DEEPL", True),
-  use_dicts:bool = CONFIG.get("USE_DICTS", True)
+  use_dicts:bool = CONFIG.get("USE_DICTS", True),
+  setup:bool = False
   ):
   
   # intializing config variables
@@ -45,6 +46,7 @@ def main(
   CONFIG["USE_DEEPL"] = use_deepl
   CONFIG["TO_LANG"] = to_lang
   CONFIG["FROM_LANGS"] = {x:get_param(f"{x}_IMPORT_FROM", "") for x in from_langs.split(" ")}
+  CONFIG["FROM_LANGS"].pop("",None)
   CONFIG['IMPORT_WORDS_TO'] = words_deck_name
   CONFIG['IMPORT_NOTES_TO'] = notes_deck_name
   CONFIG["TRY_DOWNLOAD"] = download_dicts
@@ -61,15 +63,18 @@ def main(
   codes = TRANSLATOR.get_supported_langs(type="codes")
   a = TRANSLATOR.get_supported_langs(type="names")
   CONFIG["TRANSLATOR"] = TRANSLATOR
-  CONFIG["SUPPORTED_LANGS"] = CONFIG["CUSTOM_LANGS"]
+  CONFIG["SUPPORTED_LANGS"] = CONFIG["CUSTOM_LANGS"].copy()
   CONFIG["SUPPORTED_LANGS"].update(codes)
   print(CONFIG["SUPPORTED_LANGS"])
   #CONFIG["SUPPORTED_LANGS"] = dict(sorted(list(set(langs.items())), key=lambda x: x[1])) 
   print(CONFIG["FROM_LANGS"])
-  user_friendly_setup()
+  
+  if setup or CONFIG.get("WAS_SETUP","False")=="False":
+    user_friendly_setup(save=CONFIG.get("WAS_SETUP","False"))
+    type = CONFIG.get("DEVICE", type)
   CONFIG["FROM_LANGS"] = {x.upper():get_param(f"{x.upper()}_IMPORT_FROM", "") for x in CONFIG["FROM_LANGS"]}
-  print(CONFIG["FROM_LANGS"])
-
+  #print(CONFIG["FROM_LANGS"])
+  print(CONFIG)
   TRANSLATOR.update_config(CONFIG)
   TRANSLATOR.setup_translators()
   #print(TRANSLATOR.translate("Hello my name is Emy", "EN", "NL"))
@@ -89,7 +94,7 @@ def main(
   elif type == "csv":
     device = csv_connect.Csv(config=CONFIG)
   
-
+  print(device)
   if not device:
     print("Device is not connected")
   
@@ -99,7 +104,8 @@ def main(
 
   # preparing dicts
   DICTS = load_dicts_ordered(device)
-  print(CONFIG["SUPPORTED_LANGS"])
+  #print(DICTS)
+  #print(CONFIG["SUPPORTED_LANGS"])
   
   # loading previous sync dates
   sync_dates = get_sync_dates()
@@ -132,17 +138,14 @@ def get_lang_name(code):
   return codes.get(code.upper(), code)
 
 # TODO migrate it to init.py
-def user_friendly_setup(first_setup=False, save=True, skip=False):
-  
+def user_friendly_setup(first_setup=False, save=True):
+  global CONFIG
   def update(a,b,vals_to_ignore=["", None]):
     a.update((k,v) for k,v in b.items() if v not in vals_to_ignore)
     return a
+
   
-  
-  if skip:
-    return
-  
-  codes = CONFIG["SUPPORTED_LANGS"]
+  codes = CONFIG["SUPPORTED_LANGS"].copy()
   langs = [(x,y) for y,x in codes.items()]
   
   
@@ -151,19 +154,9 @@ def user_friendly_setup(first_setup=False, save=True, skip=False):
       "DEVICE","Select default device for export of notes",choices=["koreader", "kobo", "csv", "json"]
     ),
     inquirer.Text("FILENAME","Enter filename to export words and sentences from",ignore=lambda x:x["DEVICE"] not in ["csv", "json"], default=""),
-    
-    inquirer.Checkbox(
-        "FROM_LANGS",
-        message="Select default input languages (Space -> Select, Enter -> Confirm)",
-        choices=langs,
-    ),
-    inquirer.List(
-        "TO_LANG",
-        message="Select default output language",
-        choices=langs,
-    ),
-    inquirer.Text("CLOUD_DIR", "[optional] Path to cloud directory on your pc (local copy)")
-  ]
+    inquirer.List("USUAL_CASE","Do you use languages that are not supported by common translators?",[("Yes",True),("No", False)],False),
+    inquirer.Text("CUSTOM_LANGS","(optional) Enter custom language codes and their names via colon, separating each new pair with a comma",ignore=lambda x: not x["USUAL_CASE"], default="")]
+  
   
   translators_setup = [
     inquirer.Checkbox("TRANS_USE", 
@@ -182,24 +175,25 @@ def user_friendly_setup(first_setup=False, save=True, skip=False):
   '''
   
   anki_custom_setup=[
-    inquirer.Text("MAIN_DECK", "Main deck name (default:Language Learning)"),
-    inquirer.Text("IMPORT_WORDS_TO", "Words deck name(default:Words_Reading)"),inquirer.Text("WORD_MODEL_NAME", "Anki model name for words cards(default:Anki Learn words)"),
-    inquirer.Text("WORD_FRONT_FIELD", "Front field name for words cards(default:Word)"),
-    inquirer.Text("WORD_BACK_FIELD", "Back field name for words cards(default:Definitions)"),
+    inquirer.Text("MAIN_DECK", "Main deck name (default:Language Learning)","Language Learning"),
+    inquirer.Text("IMPORT_WORDS_TO", "Words deck name(default:Words_Reading)","Words_Reading"),
+    inquirer.Text("WORD_MODEL_NAME", "Anki model name for words cards(default:Anki Learn words)","Anki Learn words"),
+    inquirer.Text("WORD_FRONT_FIELD", "Front field name for words cards(default:Word)","Word"),
+    inquirer.Text("WORD_BACK_FIELD", "Back field name for words cards(default:Definitions)","Definitions"),
     
     
-    inquirer.Text("IMPORT_NOTES_TO", "Sentences deck name(default:Notes_Reading)"),
-    inquirer.Text("NOTE_MODEL_NAME", "Anki model name for sentences cards(default:Anki Learn sentences)"),
-    inquirer.Text("NOTE_FRONT_FIELD", "Front field name for sentences cards(default:Question)"),
-    inquirer.Text("NOTE_BACK_FIELD", "Back field name for sentences cards(default:Answer)"),
+    inquirer.Text("IMPORT_NOTES_TO", "Sentences deck name(default:Notes_Reading)","Notes_Reading"),
+    inquirer.Text("NOTE_MODEL_NAME", "Anki model name for sentences cards(default:Anki Learn sentences)","Anki Learn sentences"),
+    inquirer.Text("NOTE_FRONT_FIELD", "Front field name for sentences cards(default:Question)","Question"),
+    inquirer.Text("NOTE_BACK_FIELD", "Back field name for sentences cards(default:Answer)","Answer"),
     
     
     inquirer.Text("IMPORT_STUDY_TO", "Study questions deck name(default:Study)"),
     inquirer.Text
-    ("STUDY_MODEL_NAME", "Anki model name for study questions cards(default:Anki Learn sentences)"),
+    ("STUDY_MODEL_NAME", "Anki model name for study questions cards(default:Anki Learn sentences)","Anki Learn sentences"),
     
-    inquirer.Text("STUDY_FRONT_FIELD", "Front field name for study questions cards(default:Question)"),
-    inquirer.Text("STUDY_BACK_FIELD", "Back field name for study questions cards(default:Answer)")
+    inquirer.Text("STUDY_FRONT_FIELD", "Front field name for study questions cards(default:Question)","Question"),
+    inquirer.Text("STUDY_BACK_FIELD", "Back field name for study questions cards(default:Answer)","Answer")
     
   ]
   
@@ -207,6 +201,35 @@ def user_friendly_setup(first_setup=False, save=True, skip=False):
     save = True
     
   answers = update({}, prompt(basic_setup))
+  custom_langs = {}
+  custom_codes = {}
+  if "CUSTOM_LANGS" in answers:
+    custom_langs = {x.split(":")[1]:x.split(":")[0] for x in answers["CUSTOM_LANGS"].split(",")}
+    custom_codes = {x.split(":")[0]:x.split(":")[1] for x in answers["CUSTOM_LANGS"].split(",")}
+  tempo = langs.copy()
+  langs = custom_langs.copy()
+  langs.update(tempo)
+  langs = [(x,y) for x,y in langs.items()]
+  codes.update(custom_codes)
+  CONFIG["SUPPORTED_LANGS"] = codes
+  answers.pop("USUAL_CASE")
+  
+  langs_setup = [
+    inquirer.Checkbox(
+        "FROM_LANGS",
+        message="Select default input languages (Space -> Select, Enter -> Confirm)",
+        choices=langs,
+    ),
+    inquirer.List(
+        "TO_LANG",
+        message="Select default output language",
+        choices=langs,
+    ),
+    inquirer.Text("CLOUD_DIR", "[optional] Path to cloud directory on your pc (local copy)")
+  ]
+  
+  answers = update(answers, prompt(langs_setup))
+  print(answers)
   koreader_specific = [inquirer.Text(x.upper(),f"Enter comma separated folder names form KOreader for books in {codes[x]} language",ignore=lambda _: answers["DEVICE"]!="koreader", default="") for x in answers["FROM_LANGS"]]
   
   answers = update(answers, prompt(koreader_specific))
@@ -243,17 +266,26 @@ def user_friendly_setup(first_setup=False, save=True, skip=False):
   if do_anki_setup:
     answers = update(answers, prompt(anki_custom_setup))
   
-  if save:
-    to_save = CONFIG
-    to_save.update(answers)
-    #to_save.pop("TRY_DOWNLOAD",None)
-    #to_save.pop("DICT_PATHS",None)
-    #to_save.pop("SUPPORTED_LANGS",None)
-    #to_save.pop("FROM_LANGS",None)
-    #to_save.pop("TRANSLATOR",None)
+  CONFIG.update(answers)
+  do_save = list_input("Do you want to save the settings?",choices=[ ("No", False),("Yes", True)], default=True if save=="False" else False)
+  if do_save:
+    to_save = CONFIG.copy()
+    if not to_save.get("CUSTOM_LANGS",{}):
+      to_save.pop("CUSTOM_LANGS",None)
+    to_save.pop("TRY_DOWNLOAD",None)
+    to_save.pop("WAS_SETUP",None)
+    to_save.pop("DICT_PATHS",None)
+    to_save.pop("SUPPORTED_LANGS",None)
+    to_save.pop("FROM_LANGS",None)
+    to_save.pop("TRANSLATOR",None)
+    to_save["TO_LANG"] = to_save["TO_LANG"].upper()
     print(to_save)
     
-    # TODO save CONFIG to PROPERTIES.env file
+    print("Saving newly made config...")
+    with open("PROPERTIES.env", "w", encoding="utf-8") as f:
+      for k,v in to_save.items():
+        f.write(f"\n{k}={v}")
+      f.write("\nWAS_SETUP=True")
     # TODO think of a better structure for setup
 
 
@@ -277,7 +309,9 @@ def generate_cards(words, lang, import_words_to):
     note['fields'][CONFIG["WORD_FRONT_FIELD"]] = word
     if CONFIG["USE_DICTS"]:
       definitions = []
-      for dictionary in DICTS:
+       
+      subdicts = DICTS.get(lang.upper(), DICTS["others"])
+      for dictionary in subdicts:
         result = dictionary.get(word)
         if result:
           definitions.append(result)
