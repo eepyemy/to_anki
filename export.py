@@ -65,20 +65,20 @@ def main(
   CONFIG["TRANSLATOR"] = TRANSLATOR
   CONFIG["SUPPORTED_LANGS"] = CONFIG["CUSTOM_LANGS"].copy()
   CONFIG["SUPPORTED_LANGS"].update(codes)
-  print(CONFIG["SUPPORTED_LANGS"])
+  #print(CONFIG["SUPPORTED_LANGS"])
   #CONFIG["SUPPORTED_LANGS"] = dict(sorted(list(set(langs.items())), key=lambda x: x[1])) 
-  print(CONFIG["FROM_LANGS"])
+  #print(CONFIG["FROM_LANGS"])
   
   if setup or CONFIG.get("WAS_SETUP","False")=="False":
     user_friendly_setup(save=CONFIG.get("WAS_SETUP","False"))
     type = CONFIG.get("DEVICE", type)
   CONFIG["FROM_LANGS"] = {x.upper():get_param(f"{x.upper()}_IMPORT_FROM", "") for x in CONFIG["FROM_LANGS"]}
   #print(CONFIG["FROM_LANGS"])
-  print(CONFIG)
+  #print(CONFIG)
   TRANSLATOR.update_config(CONFIG)
   TRANSLATOR.setup_translators()
   #print(TRANSLATOR.translate("Hello my name is Emy", "EN", "NL"))
-  # TODO remove this return when finished
+  
   
   # setting device
   device = None
@@ -249,7 +249,7 @@ def user_friendly_setup(first_setup=False, save=True):
     has_api = not ""==CONFIG.get(f"{name.upper()}_AUTH_KEY", "")
     
     ignore_ = not_use or doesnt_need or has_api
-    print(name, ("no auth",doesnt_need), ("dont use",not_use), ("has api",has_api), ("ignore", ignore_))
+    #print(name, ("no auth",doesnt_need), ("dont use",not_use), ("has api",has_api), ("ignore", ignore_))
     question = inquirer.Text(
       f"{name.upper()}_AUTH_KEY",
       f"Please enter API key for {name.title()}",
@@ -257,7 +257,7 @@ def user_friendly_setup(first_setup=False, save=True):
       ignore=ignore_
     )
     api.append(question)
-  print(answers)
+  #print(answers)
   #print(CONFIG)
   answers = update(answers, prompt(api))
   answers = update(answers, not_used_tranlators)
