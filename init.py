@@ -34,11 +34,15 @@ CONFIG["IMPORT_FIELD"] = get_param("IMPORT_FIELD", "Front")
 
 CONFIG["NOTE_MODEL_NAME"] = get_param("NOTE_MODEL_NAME", "Anki Learn sentences")
 CONFIG["WORD_MODEL_NAME"] = get_param("WORD_MODEL_NAME", "Anki Learn words")
+CONFIG["STUDY_MODEL_NAME"] = get_param("STUDY_MODEL_NAME", "Anki Learn sentences")
 
 CONFIG["WORD_FRONT_FIELD"] = get_param("WORD_FRONT_FIELD", "Word")
 CONFIG["WORD_BACK_FIELD"] = get_param("WORD_BACK_FIELD", "Definitions")
 CONFIG["NOTE_FRONT_FIELD"] = get_param("NOTE_FRONT_FIELD", "Question")
 CONFIG["NOTE_BACK_FIELD"] = get_param("NOTE_BACK_FIELD", "Answer")
+CONFIG["STUDY_FRONT_FIELD"] = get_param("STUDY_FRONT_FIELD", "Question")
+CONFIG["STUDY_BACK_FIELD"] = get_param("STUDY_BACK_FIELD", "Answer")
+
 
 CONFIG["TO_LANG"] = get_param("TO_LANG")
 CONFIG["USE_GOOGLE"]=get_param("USE_GOOGLE", False)
@@ -50,7 +54,7 @@ if CONFIG["CUSTOM_LANGS"]:
   CONFIG["CUSTOM_LANGS"] = {x.split(":")[0]:x.split(":")[1] for x in CONFIG["CUSTOM_LANGS"].split(",")}
 else:
   CONFIG["CUSTOM_LANGS"] = {}
-print(CONFIG["CUSTOM_LANGS"])
+#print(CONFIG["CUSTOM_LANGS"])
 
 CONFIG["WAS_SETUP"] = get_param("WAS_SETUP", "False")
 def get_dicts():
@@ -130,7 +134,7 @@ def load_dicts_ordered(device):
                         or len(x.split("\\")[1].upper())==3 
                         or ((len(x.split("\\")[1].upper().split("-"))==2) and len(x.split("\\")[1])<=8)]
   LANGS_GROUPS = list(set(LANGS_GROUPS))
-  print(LANGS_GROUPS)
+  #print(LANGS_GROUPS)
   for dpath, d in sorted_dicts:
     lang_folder = dpath.split("\\")[1].upper()
     if lang_folder in LANGS_GROUPS:
