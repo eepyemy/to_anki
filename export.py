@@ -73,6 +73,9 @@ def main(
   if setup or CONFIG.get("WAS_SETUP","False")=="False":
     user_friendly_setup(save=CONFIG.get("WAS_SETUP","False"))
     type = CONFIG.get("DEVICE", type)
+
+  [os.makedirs(f"dict/{x.upper()}") for x in CONFIG["FROM_LANGS"] if not os.path.isdir(f"dict/{x.upper()}")]
+  
   CONFIG["FROM_LANGS"] = {x.upper():get_param(f"{x.upper()}_IMPORT_FROM", "") for x in CONFIG["FROM_LANGS"]}
   #print(CONFIG["FROM_LANGS"])
   #print(CONFIG)
@@ -110,7 +113,6 @@ def main(
   
   # loading previous sync dates
   sync_dates = get_sync_dates()
-  
   # generating cards for every FROM language
   for lang in CONFIG["FROM_LANGS"]:
     print()
