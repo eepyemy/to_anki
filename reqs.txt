@@ -2,5 +2,9 @@ python-dotenv
 luadata
 psutil
 deepl
-googletrans
+googletrans==3.1.0a0
 pystardict
+rich
+typer
+inquirer==3.1.4
+langcodes
