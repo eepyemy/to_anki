@@ -41,7 +41,7 @@ def main(
   
   # intializing config variables
   global CONFIG, TRANSLATOR, DICTS
-  print(CONFIG["FROM_LANGS"])
+  #print(CONFIG["FROM_LANGS"])
   CONFIG["SKIP_REPEATS_CHECK"] = skip_import
   CONFIG["USE_GOOGLE"] = use_google
   CONFIG["USE_DEEPL"] = use_deepl
@@ -92,7 +92,7 @@ def main(
     device = kobo_connect.Kobo(config=CONFIG)
   elif type == "json":
     device = json_connect.Json(config=CONFIG)
-  elif type == "csv":
+  elif type == "csv/txt":
     device = csv_connect.Csv(config=CONFIG)
   
   print(device)
@@ -153,9 +153,9 @@ def user_friendly_setup(first_setup=False, save=True):
   
   basic_setup = [
     inquirer.List(
-      "DEVICE","Select default device for export of notes",choices=["koreader", "kobo", "csv", "json"]
+      "DEVICE","Select default device for export of notes",choices=["koreader", "kobo", "csv/txt", "json"]
     ),
-    inquirer.Text("FILENAME","Enter filename to export words and sentences from",ignore=lambda x:x["DEVICE"] not in ["csv", "json"], default=""),
+    inquirer.Text("FILENAME","Enter filename to export words and sentences from",ignore=lambda x:x["DEVICE"] not in ["csv/txt", "json"], default=""),
     inquirer.List("USUAL_CASE","Do you use languages that are not supported by common translators?",[("Yes",True),("No", False)],False),
     inquirer.Text("CUSTOM_LANGS","(optional) Enter custom language codes and their names via colon, separating each new pair with a comma",ignore=lambda x: not x["USUAL_CASE"], default="")]
   
