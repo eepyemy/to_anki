@@ -11,6 +11,7 @@ An app that:
 * AnkiConnect addon installed
 * Just in case backup your Anki collection before proceding
 * (optional) install recommended anki card templates for better definitions rendering: [Download](https://github.com/eepyemy/Anki_Templates/releases)
+* (optional) Find Stardict dictionaries you want to be used in the process of anki cards creation if the ones availabe on KOreader are not enough
 
 ## How to use
 Download the latest version of the program [here](https://github.com/eepyemy/to_anki/releases)
@@ -18,6 +19,8 @@ Download the latest version of the program [here](https://github.com/eepyemy/to_
 Extract the zip file
 
 For user friendly initial setup run `setup` file, follow instructions and choose at the end Yes if you want to save the settings. 
+
+It will automatically create `dict/{LANG}` folders after setup, put there any dictionary you want to be used for the specific source language (language you are trying to learn)
 
 After the settings are saved and you no longer want to modify them every time, you can run `export` file, which will skip the initial setup and will use the previously saved settings.
 
@@ -28,7 +31,7 @@ After the settings are saved and you no longer want to modify them every time, y
 ### koreader
 the program will look if there is a koreader device connected to pc (works with kobo, but doesnt with Android)
 
-Otherwise it will look into CLOUD_DIR path for koreader folder.
+Otherwise it will look into `CLOUD_DIR` path for koreader folder.
 
 If it finds the folder, it will extract all of the saved words and sentences during the reading for the target languages you selected. The way it determines if the word or a sentence is in the target language is by checking if the book is stored in one of the folders representing that language that user can set during the setup.
 
