@@ -24,9 +24,9 @@ from_langs = [x for x in CONFIG
                         if len(x)==2 
                         or len(x)==3 
                         or (len(x.split("-"))==2)]
-print(from_langs)
+#print(from_langs)
 from_langs.extend([x for x in get_param("FROM_LANGS","").split(",") if x.upper() not in from_langs])
-print(from_langs)
+#print(from_langs)
 CONFIG["FROM_LANGS"] = {x:get_param(f"{x}_IMPORT_FROM", "") 
                         for x in from_langs}
 
