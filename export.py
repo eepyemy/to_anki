@@ -157,16 +157,18 @@ def user_friendly_setup(first_setup=False, save=True):
     inquirer.List("USUAL_CASE","Do you use languages that are not supported by common translators?",[("Yes",True),("No", False)],False),
     inquirer.Text("CUSTOM_LANGS","(optional) Enter custom language codes and their names via colon, separating each new pair with a comma",ignore=lambda x: not x["USUAL_CASE"], default="")]
   
-  
+  skip_translators_default = ["deepl", "generic"]
+  translator_choices = [(f"{x.title()}", 
+                (f"USE_{x.upper()}", True))
+               for x in CONFIG["TRANSLATOR"].translators]
+  translator_defaults = ([(f"USE_{x.upper()}", True)
+               for x in CONFIG["TRANSLATOR"].translators if x.lower() not in skip_translators_default])
   translators_setup = [
     inquirer.Checkbox("TRANS_USE", 
       f"Select translators you want to use", 
-      choices=[(f"{x.title()}", 
-                (f"USE_{x.upper()}", True)) 
-               for x in CONFIG["TRANSLATOR"].translators], 
-      default=[(f"USE_{x.upper()}", True) 
-               for x in CONFIG["TRANSLATOR"].translators],
-      ignore=lambda x: list_input("Do you want to use all available translators?",choices=[("Yes",True), ("No", False)], default=True))
+      choices=translator_choices, 
+      default=translator_defaults,
+      ignore=lambda x: list_input("Want to setup translators?",choices=[("Yes", False), ("No", True)], default=True))
   ]
   
 
@@ -235,6 +237,7 @@ def user_friendly_setup(first_setup=False, save=True):
   answers = update(answers, prompt(koreader_specific))
   
   tr = prompt(translators_setup)
+  print(tr)
   tr.update(tr["TRANS_USE"])
   tr.pop("TRANS_USE")
   answers = update(answers, tr)
@@ -267,6 +270,7 @@ def user_friendly_setup(first_setup=False, save=True):
     answers = update(answers, prompt(anki_custom_setup))
   
   CONFIG.update(answers)
+  #print(CONFIG)
   do_save = list_input("Do you want to save the settings?",choices=[ ("No", False),("Yes", True)], default=True if save=="False" else False)
   if do_save:
     to_save = CONFIG.copy()
