@@ -133,6 +133,7 @@ def main(
     json.dump(sync_dates, k)
   
   TRANSLATOR.close()
+  input("Press Enter to finish...")
 
 def get_lang_name(code):
   codes = {x.upper():y for x,y in CONFIG["SUPPORTED_LANGS"].items()}
@@ -583,4 +584,6 @@ if __name__ == "__main__":
       e = "[ERROR]: AnkiConnect add-on is not installed or Anki is not running"
     print(traceback.format_exc())
     print(e)
-  input("Press Enter to finish...")
+    input("Press Enter to finish...")
+
+
