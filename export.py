@@ -41,6 +41,7 @@ def main(
   
   # intializing config variables
   global CONFIG, TRANSLATOR, DICTS
+  print(CONFIG["FROM_LANGS"])
   CONFIG["SKIP_REPEATS_CHECK"] = skip_import
   CONFIG["USE_GOOGLE"] = use_google
   CONFIG["USE_DEEPL"] = use_deepl
@@ -190,7 +191,7 @@ def user_friendly_setup(first_setup=False, save=True):
     inquirer.Text("NOTE_BACK_FIELD", "Back field name for sentences cards(default:Answer)","Answer"),
     
     
-    inquirer.Text("IMPORT_STUDY_TO", "Study questions deck name(default:Study)"),
+    inquirer.Text("IMPORT_STUDY_TO", "Study questions deck name(default:Study)", "Study"),
     inquirer.Text
     ("STUDY_MODEL_NAME", "Anki model name for study questions cards(default:Anki Learn sentences)","Anki Learn sentences"),
     
@@ -280,16 +281,20 @@ def user_friendly_setup(first_setup=False, save=True):
     to_save.pop("WAS_SETUP",None)
     to_save.pop("DICT_PATHS",None)
     to_save.pop("SUPPORTED_LANGS",None)
-    to_save.pop("FROM_LANGS",None)
     to_save.pop("TRANSLATOR",None)
+    to_save.pop("FROM_LANGS", None)
     to_save["TO_LANG"] = to_save["TO_LANG"].upper()
-    print(to_save)
+    to_save["FROM_LANGS"] = "".join(f'{x.upper()},' for x in CONFIG["FROM_LANGS"])[:-1]
+    
     
     print("Saving newly made config...")
     with open("PROPERTIES.env", "w", encoding="utf-8") as f:
       for k,v in to_save.items():
         f.write(f"\n{k}={v}")
       f.write("\nWAS_SETUP=True")
+    to_save["WAS_SETUP"] = True  
+    print("Saved the following data to PROPERTIES.env :")
+    print(to_save)
     # TODO think of a better structure for setup
 
 
