@@ -10,10 +10,10 @@ An app that:
 * Anki up and running on your pc
 * AnkiConnect addon installed
 * Just in case backup your Anki collection before proceding
-* (optional) install recommended anki card templates for better definitions rendering: [Download](https://github.com/eepyemy/Anki_Templates/releases/tag/release)
+* (optional) install recommended anki card templates for better definitions rendering: [Download](https://github.com/eepyemy/Anki_Templates/releases)
 
 ## How to use
-Download the latest version of the program [here](https://github.com/eepyemy/to_anki/releases/tag/test)
+Download the latest version of the program [here](https://github.com/eepyemy/to_anki/releases)
 
 Extract the zip file
 
