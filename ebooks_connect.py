@@ -6,8 +6,8 @@ import ebooklib
 from ebooklib import epub
 from bs4 import BeautifulSoup
 from simplemma import lemma_iterator, simple_tokenizer
-from simplemma.simplemma import LANGLIST
 from collections import Counter
+from glob import glob
 
 def get_lemmas(text, lang=None):
   lemmas = [x for x in lemma_iterator(text, lang)]
@@ -44,7 +44,7 @@ class Ebooks:
 		#self.connect()
 		self.books = {}
 		
-	def __load_ebook(filename):
+	def __load_ebook(self, filename):
 		try:
 			if filetype(filename, "epub"):
 				book = epub.read_epub(filename)
@@ -53,11 +53,11 @@ class Ebooks:
 					soup = BeautifulSoup(doc.get_body_content(), "html.parser")
 					content += " " + " ".join(soup.strings)
 			else:
-				with open(filename, "r", encoding="latin-1") as f:
+				with open(filename, "r", encoding="utf-8") as f:
 					content = f.read()
 			return content
 		except Exception as e:
-			print(e)
+			print("Could not open the book", e)
 
 	#  opens db connection
 	def connect(self):
@@ -65,24 +65,9 @@ class Ebooks:
 		if self.__has_needed_data(scope="all"):
 			
 			try:
-				langs = [x for x in os.listdir(EBOOKS_DIR) if os.path.isdir(x)]
+				langs = glob("ebooks/*")
+				langs = [os.path.basename(x) for x in langs if os.path.isdir(x)]
 				self.__data = {}
-				for lang in langs:
-					lang_dir = os.path.join(EBOOKS_DIR, lang)
-					ebooks = [os.path.abspath(x) for x in os.listdir(lang_dir)]
-					self.__data[lang] = []
-					for ebook in ebooks:
-						ebook_name = os.path.splittext(os.path.basename(ebook))[0]
-						content = self.__load_ebook(ebook)
-						words = content.split()
-						try:
-							lang_code = lang.lower().split("-")[0]
-							words = [x for x in lemma_iterator(content, lang_code)]
-						except Exception as e:
-							print(f"{e}\n\nCouldn't lemmatize text, gonna use raw text..")
-						words = Counter(words)
-						words = [(x[0], ebook_name) for x in sorted(words.items(), key=lambda x: x[1], reverse=True)]
-						self.__data[lang] = words
 				self.__is_connected = True
 			except Exception as e:
 				self.__data = {}
@@ -103,7 +88,25 @@ class Ebooks:
 	# safe query vocab db
 	def __query(self, lang, type):
 		if self.__is_connected:
-			items = self.__data.get(lang, [])
+			if lang not in self.__data:
+				print(f"\nChecking the books for {lang} language...")
+				self.__data[lang] = []
+				ebooks = glob(f"ebooks/{lang}/*.*")
+				for ind, ebook in enumerate(ebooks):
+					ebook_name = os.path.splitext(os.path.basename(ebook))[0]
+					print(f"({ind+1}/{len(ebooks)}) Extracting words from {ebook_name}...")
+					content = self.__load_ebook(ebook)
+					words = content.split()
+					try:
+						lang_code = lang.lower().split("-")[0]
+						words = [x for x in lemma_iterator(content, lang_code) if x.islower()]
+					except Exception as e:
+						print(f"{e}\n\nCouldn't lemmatize text, gonna use raw text..")
+					words = Counter(words)
+					words = [(x[0], ebook_name) for x in sorted(words.items(), key=lambda x: x[1], reverse=True)]
+					self.__data[lang].extend(words)
+					print(f"{len(words)} words extracted!")
+			items = self.__data[lang]
 			if isinstance(items, list):
 				if type=="words":
 					return items
@@ -160,14 +163,12 @@ class Ebooks:
 	
 # just for debug
 if __name__ == "__main__":
-	k = Ebooks()
+	k = Ebooks({"FILENAME":"ebooks"})
 	k.connect()
-	print(k.get_notes("RU"))
-	print(k.get_notes("ES"))
-	print(k.get_notes("Study"))
 	print(k.get_words("RU"))
-	print(k.get_words("ES"))
+	a = k.get_words("NL")
+	a = [f"\n{x[0]}" for x in a[0]]
+	with open("extracted.txt", "w", encoding="utf-8") as f:
+		f.writelines(a)
 	k.close()
-
-	
 	
