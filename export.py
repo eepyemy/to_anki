@@ -139,7 +139,11 @@ def main(
 
 def get_lang_name(code):
   codes = {x.upper():y for x,y in CONFIG["SUPPORTED_LANGS"].items()}
-  return codes.get(code.upper(), code)
+  result = codes.get(code.upper(), code) 
+  others = {"EN":"English", "PT":"Portuguese"}
+  if result in others:
+    result = others[result]
+  return result
 
 # TODO migrate it to init.py
 def user_friendly_setup(first_setup=False, save=True):
@@ -236,10 +240,12 @@ def user_friendly_setup(first_setup=False, save=True):
   
   answers = update(answers, prompt(langs_setup))
   print(answers)
-  koreader_specific = [inquirer.Text(x.upper(),f"Enter comma separated folder names form KOreader for books in {codes[x]} language",ignore=lambda _: answers["DEVICE"]!="koreader", default="") for x in answers["FROM_LANGS"]]
+  #x.replace("_", "-").strip("-").split("-")[0]
+  koreader_specific = [inquirer.Text(x.replace("_", "-").strip("-").split("-")[0].upper()
+  ,f"Enter comma separated folder names form KOreader for books in {codes[x]} language",ignore=lambda _: answers["DEVICE"]!="koreader", default="") for x in answers["FROM_LANGS"]]
   
   answers = update(answers, prompt(koreader_specific))
-  
+  #print(answers)
   tr = prompt(translators_setup)
   print(tr)
   tr.update(tr["TRANS_USE"])
@@ -272,6 +278,7 @@ def user_friendly_setup(first_setup=False, save=True):
   do_anki_setup = list_input("[optional] Do you want to customize anki related settings?",choices=[ ("No", False),("Yes", True)], default=False)
   if do_anki_setup:
     answers = update(answers, prompt(anki_custom_setup))
+  
   
   CONFIG.update(answers)
   #print(CONFIG)
