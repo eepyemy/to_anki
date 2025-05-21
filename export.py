@@ -343,8 +343,16 @@ def generate_cards(words, lang, import_words_to):
                   }
   notes = []
   translations = []
+  ebooks_base = "".join(f"{x}::" for x in note_blueprint["deckName"].split("::")[:-1]) + "ebooks::"
+  ebook_decks = set([x[1] for x in words if x[1]])
+  for d in ebook_decks:
+    anki_connect.invoke("createDeck", deck=ebooks_base + d)
+
   for word, ebook_name in words:
+
     note = copy.deepcopy(note_blueprint)
+    if ebook_name:
+      note["deckName"] = ebooks_base + ebook_name
     note['fields'][CONFIG["WORD_FRONT_FIELD"]] = word
     if CONFIG["USE_DICTS"]:
       definitions = []
