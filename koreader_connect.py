@@ -250,7 +250,7 @@ class Koreader:
 
 
     # get words that are older than form_date
-    words = [x[0].lower() for x in all_words if lang_check_func(x[2], lang)]
+    words = [(x[0].lower(),"") for x in all_words if lang_check_func(x[2], lang)]
     dates = [x[1] for x in all_words if lang_check_func(x[2], lang)]
     
     if len(words)==0:
