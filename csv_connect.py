@@ -115,7 +115,7 @@ class Csv:
 
 
     # get words that are older than form_date
-    words = [x.lower() for x in all_words]
+    words = [(x.lower(),) for x in all_words]
     
     if len(words)==0:
       return [], []

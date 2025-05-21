@@ -323,7 +323,7 @@ def generate_cards(words, lang, import_words_to):
                   }
   notes = []
   translations = []
-  for word in words:
+  for word, ebook_name in words:
     note = copy.deepcopy(note_blueprint)
     note['fields'][CONFIG["WORD_FRONT_FIELD"]] = word
     if CONFIG["USE_DICTS"]:
@@ -480,7 +480,7 @@ def add_words(words, to_, lang, from_=None):
   amount_words = 0
   if len(words)>0:
     ids = []
-    query_words = ''.join(f'"deck:{from_}" AND "{CONFIG["IMPORT_FIELD"]}:{word}" AND "is:suspended" AND -"deck:{to_}"' + ' OR ' for word in words)[:-4]
+    query_words = ''.join(f'"deck:{from_}" AND "{CONFIG["IMPORT_FIELD"]}:{word[0]}" AND "is:suspended" AND -"deck:{to_}"' + ' OR ' for word in words)[:-4]
     
     if not CONFIG.get("SKIP_REPEATS_CHECK"):
       ids = anki_connect.invoke("findCards", query=query_words)
@@ -491,7 +491,7 @@ def add_words(words, to_, lang, from_=None):
       imported_words = [x['fields'][CONFIG["IMPORT_FIELD"]]['value'] for x in imported_words]
       amount_words+=len(imported_words)
       print(f"imported words from anki: {imported_words}")
-      left_out_words = [item for item in words if item not in imported_words]
+      left_out_words = [item for item in words if item[0] not in imported_words]
       anki_connect.invoke("changeDeck", cards=ids, deck=to_)
       anki_connect.invoke("unsuspend", cards=ids)
     else:
@@ -499,7 +499,7 @@ def add_words(words, to_, lang, from_=None):
     if left_out_words:
       repeat_ids = []
       
-      query_words = ''.join(f'"deck:{CONFIG["MAIN_DECK"]}" AND "{CONFIG["IMPORT_FIELD"]}:{word}" AND -"is:suspended" OR "deck:{CONFIG["MAIN_DECK"]}" AND "{CONFIG["WORD_FRONT_FIELD"]}:{word}" AND -"is:suspended"' + ' OR ' for word in left_out_words)[:-4]
+      query_words = ''.join(f'"deck:{CONFIG["MAIN_DECK"]}" AND "{CONFIG["IMPORT_FIELD"]}:{word[0]}" AND -"is:suspended" OR "deck:{CONFIG["MAIN_DECK"]}" AND "{CONFIG["WORD_FRONT_FIELD"]}:{word[0]}" AND -"is:suspended"' + ' OR ' for word in left_out_words)[:-4]
       if not CONFIG.get("SKIP_REPEATS_CHECK"):
         repeat_ids = anki_connect.invoke("findCards", query=query_words)
       repeats = anki_connect.invoke("cardsInfo", cards=repeat_ids)
@@ -516,11 +516,11 @@ def add_words(words, to_, lang, from_=None):
       repeats = reps
       if repeats:
         print(f"avoided generating repeating words: {repeats}")
-      left_out_words = [item for item in left_out_words if item not in repeats]
+      left_out_words = [item for item in left_out_words if item[0] not in repeats]
       
       
       if left_out_words:
-        print(f"generating words: {left_out_words}")
+        print(f"generating words: {[x[0] for x in left_out_words]}")
       else:
         print("Skipping generating, words were already added previously...")
   
