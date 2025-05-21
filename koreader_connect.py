@@ -114,7 +114,7 @@ class Koreader:
             shutil.copyfile(path, NOTES_FILENAME)
             continue
           if datatype == "dicts":
-            shutil.copytree(path, to_file)
+            shutil.copytree(path, "dicts", dirs_exist_ok=True)
             continue  
           shutil.copyfile(path, to_file)
           #time.sleep(10)

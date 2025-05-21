@@ -8,6 +8,8 @@ import anki_connect
 import kobo_connect
 import koreader_connect
 import json_connect, csv_connect
+import ebooks_connect
+
 from utility_funcs import *
 
 from init import *
@@ -44,7 +46,8 @@ def main(
   global CONFIG, TRANSLATOR, DICTS
   #print(CONFIG["FROM_LANGS"])
   
-  
+  # !!! FOR DEBUG ONly, DELETE AFTER !!!
+  download_dicts = False
   CONFIG["INCLUDE_LEARNED"] = include_learned
   
   CONFIG["SKIP_REPEATS_CHECK"] = skip_import
@@ -79,7 +82,12 @@ def main(
     user_friendly_setup(save=CONFIG.get("WAS_SETUP","False"))
     type = CONFIG.get("DEVICE", type)
 
-  [os.makedirs(f"dict/{x.upper()}") for x in CONFIG["FROM_LANGS"] if not os.path.isdir(f"dict/{x.upper()}")]
+  
+  folder_langs = [x.replace("_", "-").strip("-").split("-")[0].upper() for x in CONFIG["FROM_LANGS"]]
+
+  [os.makedirs(f"dicts/{x}") for x in folder_langs if not os.path.isdir(f"dicts/{x}")]
+  [os.makedirs(f"ebooks/{x}") for x in folder_langs if not os.path.isdir(f"ebooks/{x}")]
+
   
   CONFIG["FROM_LANGS"] = {x.upper():get_param(f"{x.upper()}_IMPORT_FROM", "") for x in CONFIG["FROM_LANGS"]}
   #print(CONFIG["FROM_LANGS"])
@@ -102,6 +110,8 @@ def main(
     device = json_connect.Json(config=CONFIG)
   elif type == "csv/wordlist":
     device = csv_connect.Csv(config=CONFIG)
+  elif type == "ebooks":
+    device = ebooks_connect.Ebooks(config=CONFIG)
   
   print(device)
   if not device:
@@ -164,7 +174,7 @@ def user_friendly_setup(first_setup=False, save=True):
   
   basic_setup = [
     inquirer.List(
-      "DEVICE","Select default device for export of notes",choices=["koreader", "kobo", "csv/wordlist", "json"]
+      "DEVICE","Select default device for export of notes",choices=["koreader", "kobo", "ebooks", "csv/wordlist", "json"]
     ),
     inquirer.Text("FILENAME","Enter filename to export words and sentences from",ignore=lambda x:x["DEVICE"] not in ["csv/wordlist", "json"], default=""),
     inquirer.List("USUAL_CASE","Do you use languages that are not supported by common translators?",[("Yes",True),("No", False)],False),
@@ -251,7 +261,10 @@ def user_friendly_setup(first_setup=False, save=True):
 
   koreader_specific.append(inquirer.Text("STUDY", f"Enter comma separated folder names form KOreader for books that you study: ",ignore=lambda _: answers["DEVICE"]!="koreader", default=""))
   
+  include_learned = [inquirer.List("INCLUDE_LEARNED", message=f"Do you want to include already learned words in the deck?", choices=[("Yes", True), ("No", False)], ignore=lambda _: answers["DEVICE"]not in ["ebooks", "csv/wordlist", "json"])]
+
   answers = update(answers, prompt(koreader_specific))
+  answers = update(answers, prompt(include_learned))
   #print(answers)
   tr = prompt(translators_setup)
   print(tr)
