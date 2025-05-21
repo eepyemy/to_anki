@@ -243,6 +243,8 @@ def user_friendly_setup(first_setup=False, save=True):
   #x.replace("_", "-").strip("-").split("-")[0]
   koreader_specific = [inquirer.Text(x.replace("_", "-").strip("-").split("-")[0].upper()
   ,f"Enter comma separated folder names form KOreader for books in {codes[x]} language",ignore=lambda _: answers["DEVICE"]!="koreader", default="") for x in answers["FROM_LANGS"]]
+
+  koreader_specific.append(inquirer.Text("STUDY", f"Enter comma separated folder names form KOreader for books that you study: ",ignore=lambda _: answers["DEVICE"]!="koreader", default=""))
   
   answers = update(answers, prompt(koreader_specific))
   #print(answers)
