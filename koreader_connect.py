@@ -287,7 +287,7 @@ class Koreader:
     if not self.__notes_data:
       return [], []
     
-    # json -> Text, Annotation, Time created (if lang)
+    # json -> Text, Annotation, Time created (if lang), filepath
     all_notes = []
     if 'documents' not in self.__notes_data:
       self.__notes_data = {'documents':[self.__notes_data]}
