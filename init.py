@@ -13,6 +13,7 @@ def unzip_dicts():
 	zips = glob("dict/*.zip") + glob("dict/**/*.zip") + glob("dict/**/**/*.zip") + glob("dict/**/**/**/*.zip")
 	if zips:
 		print("Unzipping dictionaries...")
+		print(zips)
 	for item in zips: # loop through items in dir
 		filename = os.path.abspath(item)
 		zip_ref = zipfile.ZipFile(filename) # create zipfile object
@@ -23,7 +24,8 @@ def unzip_dicts():
 		zip_ref.extractall(zipdir) # extract file to dir
 		zip_ref.close() # close file
 		os.remove(filename) # delete zipped file
-	print("Unzipped!")
+	if zips:
+		print("Unzipped!")
 unzip_dicts()
 
 
@@ -43,6 +45,7 @@ def convert_dicts():
 		candidates[parent].append(filename)
 	if candidates:
 		print("Converting dictionaries...")
+		print(candidates.keys())
 	for parent,filenames in candidates.items():
 		
 		for file in filenames:
@@ -67,7 +70,8 @@ def convert_dicts():
 					continue
 			except Exception as e:
 				continue
-	print("Converted!")
+	if candidates:
+		print("Converted!")
 	
 		
 Glossary.init()
