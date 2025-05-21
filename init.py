@@ -120,9 +120,9 @@ CONFIG["STUDY_BACK_FIELD"] = get_param("STUDY_BACK_FIELD", "Answer")
 
 
 CONFIG["TO_LANG"] = get_param("TO_LANG")
-CONFIG["USE_GOOGLE"]=get_param("USE_GOOGLE", False)
-CONFIG["USE_DICTS"]=get_param("USE_DICTS", True)
-CONFIG["TRY_DOWNLOAD"]=False
+CONFIG["USE_GOOGLE"]=get_param("USE_GOOGLE", 'False')
+CONFIG["USE_DICTS"]=get_param("USE_DICTS", 'True')
+CONFIG["TRY_DOWNLOAD"]=get_param("TRY_DOWNLOAD", 'False')
 CONFIG["CUSTOM_LANGS"]=get_param("CUSTOM_LANGS","")
 
 if CONFIG["CUSTOM_LANGS"]:
@@ -132,6 +132,7 @@ else:
 #print(CONFIG["CUSTOM_LANGS"])
 
 CONFIG["WAS_SETUP"] = get_param("WAS_SETUP", "False")
+CONFIG["INCLUDE_LEARNED"] = get_param("INCLUDE_LEARNED", 'False')
 def get_dicts():
 	dicts = []
 	dicts = glob("dict/**/*.ifo") + glob("dict/**/**/*.ifo") + glob("dict/**/**/**/*.ifo")
