@@ -10,7 +10,7 @@ An app that:
 * Anki up and running on your pc
 * AnkiConnect addon installed
 * Just in case backup your Anki collection before proceding
-* (optional) install recommended anki card templates for better definitions rendering: [Download](https://github.com/eepyemy/Anki_Templates/releases)
+* (optional) install recommended anki card templates for better definitions rendering: [Download](https://github.com/eepyemy/anki_learn_templates/releases)
 * (optional) Find Stardict dictionaries you want to be used in the process of anki cards creation if the ones availabe on KOreader are not enough
 
 ## How to use
