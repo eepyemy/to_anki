@@ -2,7 +2,7 @@
 
 An app that: 
 * aids mass creation of anki cards from saved words and sentences for language learning or general purpose studying
-* supports StarDict dictionaries and can create cards with multiple definitions
+* supports lots of dictionaries thanks to [PyGlossary](https://github.com/ilius/pyglossary?tab=readme-ov-file#supported-formats) and can create cards with multiple definitions
 * supports Google and DeepL translation for sentences 
 * can be used as an export tool in combination with KOreader (takes a bit of tidious setup with Android unfortunately)
 
