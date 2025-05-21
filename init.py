@@ -9,8 +9,10 @@ from shutil import rmtree
 
 # #TODO make it unzip all zip files in dict folder
 def unzip_dicts():
+	
 	zips = glob("dict/*.zip") + glob("dict/**/*.zip") + glob("dict/**/**/*.zip") + glob("dict/**/**/**/*.zip")
-	print(zips)
+	if zips:
+		print("Unzipping dictionaries...")
 	for item in zips: # loop through items in dir
 		filename = os.path.abspath(item)
 		zip_ref = zipfile.ZipFile(filename) # create zipfile object
@@ -21,7 +23,7 @@ def unzip_dicts():
 		zip_ref.extractall(zipdir) # extract file to dir
 		zip_ref.close() # close file
 		os.remove(filename) # delete zipped file
-
+	print("Unzipped!")
 unzip_dicts()
 
 
@@ -39,7 +41,8 @@ def convert_dicts():
 		if parent not in candidates:
 			candidates[parent] = []
 		candidates[parent].append(filename)
-
+	if candidates:
+		print("Converting dictionaries...")
 	for parent,filenames in candidates.items():
 		
 		for file in filenames:
@@ -64,6 +67,7 @@ def convert_dicts():
 					continue
 			except Exception as e:
 				continue
+	print("Converted!")
 	
 		
 Glossary.init()
