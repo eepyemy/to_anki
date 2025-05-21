@@ -14,3 +14,6 @@ def date_to_ms(date):
 
 def date_to_str(date, ms_timestamp=True):
   return date.strftime("%Y-%m-%dT%H:%M:%SZ")
+
+def filetype(name, extention):
+  return name.split(".")[-1]==extention
