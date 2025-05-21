@@ -95,7 +95,7 @@ def main(
     device = kobo_connect.Kobo(config=CONFIG)
   elif type == "json":
     device = json_connect.Json(config=CONFIG)
-  elif type == "csv/txt":
+  elif type == "csv/wordlist":
     device = csv_connect.Csv(config=CONFIG)
   
   print(device)
@@ -155,9 +155,9 @@ def user_friendly_setup(first_setup=False, save=True):
   
   basic_setup = [
     inquirer.List(
-      "DEVICE","Select default device for export of notes",choices=["koreader", "kobo", "csv/txt", "json"]
+      "DEVICE","Select default device for export of notes",choices=["koreader", "kobo", "csv/wordlist", "json"]
     ),
-    inquirer.Text("FILENAME","Enter filename to export words and sentences from",ignore=lambda x:x["DEVICE"] not in ["csv/txt", "json"], default=""),
+    inquirer.Text("FILENAME","Enter filename to export words and sentences from",ignore=lambda x:x["DEVICE"] not in ["csv/wordlist", "json"], default=""),
     inquirer.List("USUAL_CASE","Do you use languages that are not supported by common translators?",[("Yes",True),("No", False)],False),
     inquirer.Text("CUSTOM_LANGS","(optional) Enter custom language codes and their names via colon, separating each new pair with a comma",ignore=lambda x: not x["USUAL_CASE"], default="")]
   
