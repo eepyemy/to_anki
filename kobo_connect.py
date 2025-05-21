@@ -101,7 +101,7 @@ class Kobo:
     all_words = self.__query("SELECT * FROM WordList ORDER BY DateCreated")
     all_words = list(all_words)
 
-    words = [word for word,_,lang_,_ in all_words if lang_check_func(lang_)]
+    words = [(word,) for word,_,lang_,_ in all_words if lang_check_func(lang_)]
     dates = [date_to_ms(str_to_date(date)) for _,_,lang_,date in all_words if lang_check_func(lang_)]
     
     if len(words)==0:
