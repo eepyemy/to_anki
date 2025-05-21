@@ -6,11 +6,10 @@ import os, zipfile
 from pyglossary.glossary_v2 import ConvertArgs, Glossary
 from shutil import rmtree
 
-
-# #TODO make it unzip all zip files in dict folder
+# #TODO make it unzip all zip files in dicts folder
 def unzip_dicts():
 	
-	zips = glob("dict/*.zip") + glob("dict/**/*.zip") + glob("dict/**/**/*.zip") + glob("dict/**/**/**/*.zip")
+	zips = glob("dicts/*.zip") + glob("dicts/**/*.zip") + glob("dicts/**/**/*.zip") + glob("dicts/**/**/**/*.zip")
 	if zips:
 		print("Unzipping dictionaries...")
 		print(zips)
@@ -29,10 +28,10 @@ def unzip_dicts():
 unzip_dicts()
 
 
-# #TODO make built in dict conversion
+# #TODO make built in dicts conversion
 # from pyglossary import Glossary
 def convert_dicts():
-	files = glob("dict/**/*.*") + glob("dict/**/**/*.*") + glob("dict/**/**/**/*.*")
+	files = glob("dicts/**/*.*") + glob("dicts/**/**/*.*") + glob("dicts/**/**/**/*.*")
 	files = [x for x in files if not os.path.isdir(x)]
 	candidates = {}
 	for item in files:
@@ -60,7 +59,7 @@ def convert_dicts():
 					inputFilename=f"{file}",
 					outputFilename=f"{parent}-sd",
 					outputFormat="Stardict",
-					# you can pass readOptions or writeOptions as a dict
+					# you can pass readOptions or writeOptions as a dicts
 					# writeOptions={"encoding": "utf-8"},
 				)):
 					rmtree(parent)
@@ -135,14 +134,14 @@ CONFIG["WAS_SETUP"] = get_param("WAS_SETUP", "False")
 CONFIG["INCLUDE_LEARNED"] = get_param("INCLUDE_LEARNED", 'False')
 def get_dicts():
 	dicts = []
-	dicts = glob("dict/**/*.ifo") + glob("dict/**/**/*.ifo") + glob("dict/**/**/**/*.ifo")
+	dicts = glob("dicts/**/*.ifo") + glob("dicts/**/**/*.ifo") + glob("dicts/**/**/**/*.ifo")
 	return dicts
 
 CONFIG["DICT_PATHS"] = get_dicts()
-if not CONFIG["DICT_PATHS"] and CONFIG["USE_DICTS"]:
+if not CONFIG["DICT_PATHS"] and (CONFIG["USE_DICTS"]=='True'):
 	print(os.getcwd())
 	print("Didnt find any dicts in working directory, trying to download...")
-	CONFIG["TRY_DOWNLOAD"]=True
+	CONFIG["TRY_DOWNLOAD"]='True'
 
 def check_reqs(list_params, raise_error=True):
 	result = True
