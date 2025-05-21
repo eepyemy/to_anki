@@ -31,17 +31,22 @@ def main(
   to_lang:str = CONFIG['TO_LANG'], 
   notes_deck_name:str = CONFIG['IMPORT_NOTES_TO'], 
   words_deck_name:str = CONFIG['IMPORT_WORDS_TO'], sleep_sec:int = None, 
-  use_google: bool = CONFIG["USE_GOOGLE"], 
-  skip_import : bool = CONFIG.get("SKIP_REPEATS_CHECK", False), 
-  download_dicts : bool = CONFIG["TRY_DOWNLOAD"], 
-  use_deepl:bool = CONFIG.get("USE_DEEPL", True),
-  use_dicts:bool = CONFIG.get("USE_DICTS", True),
-  setup:bool = False
+  use_google: bool = CONFIG.get("USE_GOOGLE", 'True') == 'True', 
+  skip_import : bool = CONFIG.get("SKIP_REPEATS_CHECK", 'False') == 'True', 
+  download_dicts : bool = CONFIG.get("TRY_DOWNLOAD", 'False') == 'True', 
+  use_deepl:bool = CONFIG.get("USE_DEEPL", 'True') == 'True',
+  use_dicts:bool = CONFIG.get("USE_DICTS", 'True') == 'True',
+  setup:bool = False,
+  include_learned:bool = CONFIG.get("INCLUDE_LEARNED", 'False') == 'True'
   ):
   
   # intializing config variables
   global CONFIG, TRANSLATOR, DICTS
   #print(CONFIG["FROM_LANGS"])
+  
+  
+  CONFIG["INCLUDE_LEARNED"] = include_learned
+  
   CONFIG["SKIP_REPEATS_CHECK"] = skip_import
   CONFIG["USE_GOOGLE"] = use_google
   CONFIG["USE_DEEPL"] = use_deepl
