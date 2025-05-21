@@ -96,7 +96,7 @@ def get_param(param_name, default=None):
 	return CONFIG.get(param_name, default)
 
  
-from_langs = [x for x in get_param("FROM_LANGS","").split(",")]
+from_langs = [x.replace("_", "-").strip("-").split("-")[0].upper() for x in get_param("FROM_LANGS","").split(",")]
 #print(from_langs)
 CONFIG["FROM_LANGS"] = {x:get_param(f"{x}_IMPORT_FROM", "") 
 												for x in from_langs}
