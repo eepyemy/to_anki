@@ -6,7 +6,7 @@
 *.env
 __pycache__
 build
-dict
+dicts
 dist
 ebooks
 *.txt
