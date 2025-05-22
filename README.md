@@ -43,7 +43,12 @@ It will also sync all of the dictionaries that your koreader folder has and use 
 
 Program checks if kobo is connected and if it is, program looks for sentences and words that were saved during reading and translates them into anki cards. 
 
-### csv/txt
+### ebooks
+
+The program looksup for books in `ebooks/{LANG}` directory. It supports `.epub` and `.txt` formats.
+Then it creates an anki deck for each book using most frequent words, aiming to give user the words needed to be able to understand `95%` of the text. (the nuber can be changed via `COVERAGE` parameter or during the setup)
+
+### csv/list
 
 The program will read the csv or txt file for words and sentences. It will bulk create anki decks for languages selected. Default structure of the file is like this. 
 
