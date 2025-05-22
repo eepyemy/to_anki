@@ -135,14 +135,15 @@ def main(
   #print(CONFIG["SUPPORTED_LANGS"])
   
   # loading previous sync dates
-  sync_dates = get_sync_dates()
+  
   # generating cards for every FROM language
   for lang in CONFIG["FROM_LANGS"]:
     print()
     print(f"Exporting from {get_lang_name(lang)} language...")
     print()
-    sync_dates.extend(export_lang(device, lang))
-
+    export_lang(device, lang)
+  
+  sync_dates = get_sync_dates()
   # generating study cards
   print()
   print(f"Exporting study questions...")
@@ -160,10 +161,25 @@ def main(
   TRANSLATOR.close()
   input("Press Enter to finish...")
 
+def get_learned_words(lang):
+  global CONFIG
+
+  # "deck:Language Learning::Dutch" AND "-is:new"
+
+  deck_name= f"{CONFIG['MAIN_DECK']}::{get_lang_name(lang)}"
+  
+  query_words = ''.join(f'"deck:{deck_name}" AND -is:new AND -is:suspended')
+  ids = anki_connect.invoke("findCards", query=query_words)
+  learned_words = []
+  if ids:
+    cards = anki_connect.invoke("cardsInfo", cards=ids)
+    learned_words = [x["fields"][list(x["fields"].keys())[0]]['value'] for x in cards]
+  return learned_words
+
 def get_lang_name(code):
   codes = {x.upper():y for x,y in CONFIG["SUPPORTED_LANGS"].items()}
   result = codes.get(code.upper(), code) 
-  others = {"EN":"English", "PT":"Portuguese"}
+  others = {"EN":"English", "PT":"Portuguese", "ZH":"Chinese"}
   if result in others:
     result = others[result]
   return result
@@ -447,6 +463,9 @@ def export_study(device):
 
 # exports all words and notes for specific language
 def export_lang(device, lang):
+  global BATCH, TOTAL
+  TOTAL = 0
+  BATCH = 0
   check_reqs(["WORD_FRONT_FIELD", "WORD_BACK_FIELD", "WORD_MODEL_NAME", "NOTE_FRONT_FIELD", "NOTE_BACK_FIELD", "NOTE_MODEL_NAME"])
   
   sync_dates = []
@@ -457,9 +476,9 @@ def export_lang(device, lang):
   IMPORT_WORDS_FROM = CONFIG["FROM_LANGS"][lang]
   if not IMPORT_WORDS_FROM:
     CONFIG["SKIP_REPEATS_CHECK"] = True
-  to_lang = CONFIG["TO_LANG"]
-  import_notes_to= f"{CONFIG['MAIN_DECK']}::{get_lang_name(lang)}_{get_lang_name(to_lang)}::{CONFIG['IMPORT_NOTES_TO']}"
-  import_words_to= f"{CONFIG['MAIN_DECK']}::{get_lang_name(lang)}_{get_lang_name(to_lang)}::{CONFIG['IMPORT_WORDS_TO']}"
+
+  import_notes_to= f"{CONFIG['MAIN_DECK']}::{get_lang_name(lang)}::Reading::{CONFIG['IMPORT_NOTES_TO']}"
+  import_words_to= f"{CONFIG['MAIN_DECK']}::{get_lang_name(lang)}::Reading::{CONFIG['IMPORT_WORDS_TO']}"
   anki_connect.invoke("createDeck", deck=import_notes_to)
   anki_connect.invoke("createDeck", deck=import_words_to)
   
@@ -469,36 +488,83 @@ def export_lang(device, lang):
   words, words_dates = device.get_words(FROM_LANG)
   words, words_dates = get_new_items(words, words_dates)
   
+  if not CONFIG["INCLUDE_LEARNED"]:
+    print("Retrieving learned words...")
+    learned_words = get_learned_words(lang)
+    ziped = [x for x in zip(words, words_dates) if x[0][0] not in learned_words]
+    if CONFIG["VERBOSE"]:
+      print(f"Learned words are: {learned_words}")
+    print(f"Skipping already learned words: {len(words) - len(ziped)}...")
+    words = [x[0] for x in ziped]
+    words_dates = [x[1] for x in ziped]
+  
   print(f"syncing all notes...")
   notes, notes_dates = device.get_notes(FROM_LANG)
   notes, notes_dates = get_new_items(notes, notes_dates)
-  
-  # list -> (note, translation)
-  notes = [[x[0], TRANSLATOR.translate(x[0], from_=lang)] for x in notes if x[1] == None or x[1].strip() == '']
-
-  
-  from_to = f"{lang}{CONFIG['TO_LANG']}"
-  notes = [(x,t) for x,t in notes if t!="No translation available"]
-  TRANSLATOR.update_previous_translations(dict(notes),from_to)
-
-  # print(notes)
-  len_words = add_words(words, import_words_to, lang, IMPORT_WORDS_FROM)
-  
-  print(f"Got {len(notes)} notes...")  
-  len_sentences = add_notes(notes, import_notes_to)
-  
   device.close()
+  
   is_skip_sync = (isinstance(device, csv_connect.Csv) 
                or isinstance(device, json_connect.Json)) 
+  from_to = f"{lang}{CONFIG['TO_LANG']}"
+
+  sync_dates = get_sync_dates()
+
+  TOTAL = len(words)
+  words_batch = []
+  result_words = []
+  words_dates_batch = []
+  len_words = 0
+  for ind, pair in enumerate(zip(words,words_dates)):
+    word, word_date = pair
+    words_batch.append(word)
+    words_dates_batch.append(word_date)
+    if ((ind+1) % int(CONFIG["BATCH_SIZE"]))==0 or ind+1==len(words):
+      
+      #do something
+      
+      len_words += add_words(words_batch, import_words_to, lang, IMPORT_WORDS_FROM)
+      BATCH += int(CONFIG["BATCH_SIZE"])
+      words_dates_batch = [ms_to_str(x) for x in words_dates_batch]
+      if not is_skip_sync:
+        sync_dates.extend(words_dates_batch)
+        sync_dates = list(set(sync_dates))
+        with open("sync_dates.json", "w", encoding="utf-8") as k:
+          json.dump(sync_dates, k)
+      result_words.append(words_batch)
+      words_batch = []
+      words_dates_batch = []
+    
+  notes_batch = []
+  result_notes = []
+  len_sentences = 0
+  notes_dates_batch = []
+  for ind, pair in enumerate(zip(notes,notes_dates)):
+    note, note_date = pair
+    notes_batch.append(note)
+    notes_dates_batch.append(note_date)
+    if ind % int(CONFIG["BATCH_SIZE"]) or ind+1==len(notes):
+      print(f"{ind+1}/{len(notes)} Processing notes...")  
+
+      # translation
+      # list -> (note, translation)
+      notes_batch = [(x[0], TRANSLATOR.translate(x[0], from_=lang), x[2],) for x in notes_batch if x[1] == None or x[1].strip() == '']
+      translations = [(x,t,) for x,t,_ in notes_batch if t!="No translation available"]
+      TRANSLATOR.update_previous_translations(dict(translations),from_to)
+      len_sentences += add_notes(notes_batch, import_notes_to)
+      notes_dates_batch = [ms_to_str(x) for x in notes_dates_batch]
+      if not is_skip_sync:
+        sync_dates.extend(notes_dates_batch)
+        sync_dates = list(set(sync_dates))
+        with open("sync_dates.json", "w", encoding="utf-8") as k:
+          json.dump(sync_dates, k)
+      result_notes.append(notes_batch)
+      notes_batch = []
   
-  sync_dates = []
-  words_dates = [ms_to_str(x) for x in words_dates]
-  notes_dates = [ms_to_str(x) for x in notes_dates]
+  print(f"Got {len_words} words...")  
+  print(f"Got {len_sentences} notes...")  
   
-  if not is_skip_sync:
-    sync_dates.extend(words_dates)
-    sync_dates.extend(notes_dates)
-  else: print("skipping sync dates...")
+  if is_skip_sync:
+    print("skipping sync dates...")
   
   
   with open("history.txt", "a") as f:
@@ -506,8 +572,6 @@ def export_lang(device, lang):
       f.write(f"\n[{notes_dates[0]}][{lang}]: {len_sentences} sentences imported.")
     if len_words:
       f.write(f"\n[{words_dates[0]}][{lang}]: {len_words} words imported.")
-  
-  return sync_dates
 
 # logic of adding words to anki decks
 def add_words(words, to_, lang, from_=None):
