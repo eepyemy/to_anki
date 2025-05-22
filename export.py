@@ -32,14 +32,19 @@ def main(
   from_langs: str = "".join(f"{x} " for x in list(CONFIG["FROM_LANGS"].keys()))[:-1], 
   to_lang:str = CONFIG['TO_LANG'], 
   notes_deck_name:str = CONFIG['IMPORT_NOTES_TO'], 
-  words_deck_name:str = CONFIG['IMPORT_WORDS_TO'], sleep_sec:int = None, 
+  words_deck_name:str = CONFIG['IMPORT_WORDS_TO'], 
+  sleep_sec:int = None,
+  batch_size:str = CONFIG.get("BATCH_SIZE", "100"),
+  coverage:str = CONFIG.get("COVERAGE", "95"), 
   use_google: bool = CONFIG.get("USE_GOOGLE", 'True') == 'True', 
-  skip_import : bool = CONFIG.get("SKIP_REPEATS_CHECK", 'False') == 'True', 
+  skip_import : bool = CONFIG.get("SKIP_REPEATS_CHECK", 'True') == 'True', 
   download_dicts : bool = CONFIG.get("TRY_DOWNLOAD", 'False') == 'True', 
   use_deepl:bool = CONFIG.get("USE_DEEPL", 'True') == 'True',
   use_dicts:bool = CONFIG.get("USE_DICTS", 'True') == 'True',
   setup:bool = False,
-  include_learned:bool = CONFIG.get("INCLUDE_LEARNED", 'False') == 'True'
+  include_learned:bool = CONFIG.get("INCLUDE_LEARNED", 'False') == 'True',
+  translate_words:bool = CONFIG.get("TRANSLATE_WORDS",'False') == 'True',
+  verbose:bool = CONFIG.get("VERBOSE", "False") == 'True'
   ):
   
   # intializing config variables
@@ -48,8 +53,11 @@ def main(
   
   # !!! FOR DEBUG ONly, DELETE AFTER !!!
   download_dicts = False
+  CONFIG["COVERAGE"] = coverage
+  CONFIG["VERBOSE"] = verbose
+  CONFIG["TRANSLATE_WORDS"] = translate_words
   CONFIG["INCLUDE_LEARNED"] = include_learned
-  
+  CONFIG["BATCH_SIZE"] = batch_size
   CONFIG["SKIP_REPEATS_CHECK"] = skip_import
   CONFIG["USE_GOOGLE"] = use_google
   CONFIG["USE_DEEPL"] = use_deepl
