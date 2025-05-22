@@ -2,31 +2,34 @@ import os
 from glob import glob
 from pystardict import Dictionary
 from rich import print
-import os, zipfile
+import os
+from shutil import unpack_archive
 from pyglossary.glossary_v2 import ConvertArgs, Glossary
 from shutil import rmtree
+import traceback
 
 # #TODO make it unzip all zip files in dicts folder
 def unzip_dicts():
+	formats = [ "zip", "tar", "tar.gz", "tar.bz", "tar.xz"]
+	zips = [] 
 	
-	zips = glob("dicts/*.zip") + glob("dicts/**/*.zip") + glob("dicts/**/**/*.zip") + glob("dicts/**/**/**/*.zip")
+	[zips.extend(glob(f"dicts/*.{x}") + glob(f"dicts/**/*.{x}") + glob(f"dicts/**/**/*.{x}") + glob(f"dicts/**/**/**/*.{x}")) for x in formats]
+	zips = [x for x in zips if os.path.isfile(x)]
 	if zips:
 		print("Unzipping dictionaries...")
 		print(zips)
-	for item in zips: # loop through items in dir
+	for ind, item in enumerate(zips): # loop through items in dir
 		filename = os.path.abspath(item)
-		zip_ref = zipfile.ZipFile(filename) # create zipfile object
-		zipdir = filename[:-4]
+		zipdir = os.path.splitext(filename)[0]
 		if not os.path.exists(zipdir):
 			os.mkdir(zipdir)
 		
-		zip_ref.extractall(zipdir) # extract file to dir
-		zip_ref.close() # close file
+		unpack_archive(filename=item, extract_dir=zipdir) # extract file to dir
 		os.remove(filename) # delete zipped file
+		print(f"{ind+1}/{len(zips)} done", end="\r")
+	print("")
 	if zips:
 		print("Unzipped!")
-unzip_dicts()
-
 
 # #TODO make built in dicts conversion
 # from pyglossary import Glossary
@@ -45,37 +48,68 @@ def convert_dicts():
 	if candidates:
 		print("Converting dictionaries...")
 		print(candidates.keys())
-	for parent,filenames in candidates.items():
-		
+
+	for ind, pair in enumerate(candidates.items()):
+		parent, filenames = pair
+		parent_base = os.path.basename(parent)
 		for file in filenames:
 			try:
 				if not os.path.exists(file):
 					break
 				base = os.path.basename(file)
 				glos = Glossary()
-				if not os.path.exists(f"{parent}-sd"):
-					os.mkdir(f"{parent}-sd")
+				output = ""
+				input = ""
+				to_delete = ""
+				if len(parent_base)<=3:
+					output = f"{os.path.splitext(file)[0]}"
+					if not os.path.exists(output):
+						os.mkdir(f'{output}-sd')
+					input = file
+					to_delete = file
+				else:
+					output = f"{parent}"
+					if not os.path.exists(output):
+						os.mkdir(f'{output}-sd')
+					input = file	
+					to_delete = parent
 				if glos.convert(ConvertArgs(
-					inputFilename=f"{file}",
-					outputFilename=f"{parent}-sd",
+					inputFilename=f"{input}",
+					outputFilename=f"{output}-sd",
 					outputFormat="Stardict",
 					# you can pass readOptions or writeOptions as a dicts
 					# writeOptions={"encoding": "utf-8"},
 				)):
-					rmtree(parent)
+					if os.path.isdir(to_delete):
+						rmtree(to_delete)
+					else:
+						os.remove(to_delete)
 					break
 				else:
-					os.remove(f"{parent}-sd")
+					if os.path.isdir(f"{output}-sd"):
+						rmtree(f"{output}-sd")
+					else:
+						os.remove(f"{output}-sd")
 					continue
 			except Exception as e:
+				#traceback.print_exc()
+				print("ERROR: ,",e)
+				if os.path.isdir(f"{output}-sd"):
+					rmtree(f"{output}-sd")
+				else:
+					os.remove(f"{output}-sd")
 				continue
+		print(f"{ind+1}/{len(candidates)} done", end="\r")
+	print("")
 	if candidates:
 		print("Converted!")
 	
-		
-Glossary.init()
-convert_dicts()
-
+try:	
+	Glossary.init()
+	unzip_dicts()
+	convert_dicts()
+except Exception as e:
+	print("There was a problem with either converting or unzipping\n", e)
 
 
 CONFIG={}
