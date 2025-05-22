@@ -36,7 +36,7 @@ def main(
   notes_deck_name:str = CONFIG['IMPORT_NOTES_TO'], 
   words_deck_name:str = CONFIG['IMPORT_WORDS_TO'], 
   sleep_sec:int = None,
-  batch_size:str = CONFIG.get("BATCH_SIZE", "100"),
+  batch_size:str = CONFIG.get("BATCH_SIZE", "1000"),
   coverage:str = CONFIG.get("COVERAGE", "95"), 
   use_google: bool = CONFIG.get("USE_GOOGLE", 'True') == 'True', 
   skip_import : bool = CONFIG.get("SKIP_REPEATS_CHECK", 'True') == 'True', 
