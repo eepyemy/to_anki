@@ -9,6 +9,9 @@ build
 dicts
 dist
 ebooks
+plugins
+pyglossary
+plugins-meta
 *.txt
 *.csv
 *.exe
