@@ -289,8 +289,12 @@ def user_friendly_setup(first_setup=False, save=True):
   
   include_learned = [inquirer.List("INCLUDE_LEARNED", message=f"Do you want to include already learned words in the deck?", choices=[("Yes", True), ("No", False)], ignore=lambda _: answers["DEVICE"]not in ["ebooks", "csv/list", "json"])]
 
+  coverage = [inquirer.Text("COVERAGE", message=f"Please enter the percentage of text you aim to be able to understand: ", ignore=lambda _: answers["DEVICE"]not in ["ebooks"], default="95")]
+
   answers = update(answers, prompt(koreader_specific))
   answers = update(answers, prompt(include_learned))
+  answers = update(answers, prompt(coverage))
+  
   #print(answers)
   tr = prompt(translators_setup)
   print(tr)
