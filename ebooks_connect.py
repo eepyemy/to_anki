@@ -102,10 +102,22 @@ class Ebooks:
 						words = [x for x in lemma_iterator(content, lang_code) if x.islower()]
 					except Exception as e:
 						print(f"{e}\n\nCouldn't lemmatize text, gonna use raw text..")
-					words = Counter(words)
-					words = [(x[0], ebook_name) for x in sorted(words.items(), key=lambda x: x[1], reverse=True)]
-					self.__data[lang].extend(words)
-					print(f"{len(words)} words extracted!")
+					
+					counted = Counter(words)
+					sorted_count = [(x[0], ebook_name) for x in sorted(counted.items(), key=lambda x: x[1], reverse=True)]
+
+					coverage = self.CONFIG.get("COVERAGE",100)
+					needed = []
+					covered = 0
+					for x in sorted_count:
+						needed.append(x)
+						covered = sum([counted[x[0]] for x in needed])
+						#print(covered)
+						covered = (covered/len(words))*100 
+						if covered>=float(coverage):
+							break
+					self.__data[lang].extend(needed)
+					print(f"{len(needed)} words extracted to achieve {covered:.0f} coverage!")
 			items = self.__data[lang]
 			if isinstance(items, list):
 				if type=="words":
