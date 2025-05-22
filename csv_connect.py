@@ -115,7 +115,7 @@ class Csv:
 
 
     # get words that are older than form_date
-    words = [(x.lower(),) for x in all_words]
+    words = [(x.lower(),self.CONFIG["FILENAME"]) for x in all_words]
     
     if len(words)==0:
       return [], []
@@ -137,7 +137,7 @@ class Csv:
     
     # print(all_notes)
     dates = [datetime.now().timestamp() for _,_ in all_notes]
-    all_notes = [(x, "") for x,_ in all_notes]
+    all_notes = [(x, "", self.CONFIG["FILENAME"]) for x,_ in all_notes]
     
     if len(all_notes)==0:
       return [], []
