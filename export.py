@@ -97,7 +97,7 @@ def main(
   [os.makedirs(f"ebooks/{x}") for x in folder_langs if not os.path.isdir(f"ebooks/{x}")]
 
   
-  CONFIG["FROM_LANGS"] = {x.upper():get_param(f"{x.upper()}_IMPORT_FROM", "") for x in CONFIG["FROM_LANGS"]}
+  CONFIG["FROM_LANGS"] = {x.upper():get_param(f"{x.upper()}_IMPORT_FROM", "") for x in folder_langs}
   #print(CONFIG["FROM_LANGS"])
   #print(CONFIG)
   TRANSLATOR.update_config(CONFIG)
