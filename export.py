@@ -116,7 +116,7 @@ def main(
     device = kobo_connect.Kobo(config=CONFIG)
   elif type == "json":
     device = json_connect.Json(config=CONFIG)
-  elif type == "csv/wordlist":
+  elif type == "csv/list":
     device = csv_connect.Csv(config=CONFIG)
   elif type == "ebooks":
     device = ebooks_connect.Ebooks(config=CONFIG)
@@ -182,9 +182,9 @@ def user_friendly_setup(first_setup=False, save=True):
   
   basic_setup = [
     inquirer.List(
-      "DEVICE","Select default device for export of notes",choices=["koreader", "kobo", "ebooks", "csv/wordlist", "json"]
+      "DEVICE","Select default device for export of notes",choices=["koreader", "kobo", "ebooks", "csv/list", "json"]
     ),
-    inquirer.Text("FILENAME","Enter filename to export words and sentences from",ignore=lambda x:x["DEVICE"] not in ["csv/wordlist", "json"], default=""),
+    inquirer.Text("FILENAME","Enter filename to export words and sentences from",ignore=lambda x:x["DEVICE"] not in ["csv/list", "json"], default=""),
     inquirer.List("USUAL_CASE","Do you use languages that are not supported by common translators?",[("Yes",True),("No", False)],False),
     inquirer.Text("CUSTOM_LANGS","(optional) Enter custom language codes and their names via colon, separating each new pair with a comma",ignore=lambda x: not x["USUAL_CASE"], default="")]
   
@@ -269,7 +269,7 @@ def user_friendly_setup(first_setup=False, save=True):
 
   koreader_specific.append(inquirer.Text("STUDY", f"Enter comma separated folder names form KOreader for books that you study: ",ignore=lambda _: answers["DEVICE"]!="koreader", default=""))
   
-  include_learned = [inquirer.List("INCLUDE_LEARNED", message=f"Do you want to include already learned words in the deck?", choices=[("Yes", True), ("No", False)], ignore=lambda _: answers["DEVICE"]not in ["ebooks", "csv/wordlist", "json"])]
+  include_learned = [inquirer.List("INCLUDE_LEARNED", message=f"Do you want to include already learned words in the deck?", choices=[("Yes", True), ("No", False)], ignore=lambda _: answers["DEVICE"]not in ["ebooks", "csv/list", "json"])]
 
   answers = update(answers, prompt(koreader_specific))
   answers = update(answers, prompt(include_learned))
