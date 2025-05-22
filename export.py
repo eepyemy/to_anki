@@ -24,6 +24,8 @@ app = typer.Typer()
 
 TRANSLATOR = None
 DICTS = None
+BATCH=0
+TOTAL=0
 
 @app.command()
 def main(
@@ -367,13 +369,14 @@ def generate_cards(words, lang, import_words_to):
                   }
   notes = []
   translations = []
-  ebooks_base = "".join(f"{x}::" for x in note_blueprint["deckName"].split("::")[:-1]) + "ebooks::"
+  ebooks_base = "".join(f"{x}::" for x in note_blueprint["deckName"].split("::")[:-2]) + "ebooks::"
   ebook_decks = set([x[1] for x in words if x[1]])
   for d in ebook_decks:
     anki_connect.invoke("createDeck", deck=ebooks_base + d)
-
-  for word, ebook_name in words:
-
+  print("")
+  for ind, pair in enumerate(words):
+    word, ebook_name = pair
+    print(f"Generating cards: {BATCH+ind+1}/{TOTAL}...", end="\r", flush=True)
     note = copy.deepcopy(note_blueprint)
     if ebook_name:
       note["deckName"] = ebooks_base + ebook_name
@@ -385,24 +388,29 @@ def generate_cards(words, lang, import_words_to):
       for dictionary in subdicts:
         result = dictionary.get(word)
         if result:
-          definitions.append(result)
+          definitions.append((result,str(dictionary)))
       if definitions:
-        note['fields'][CONFIG["WORD_BACK_FIELD"]] = ''.join('<div class="definition">'+x+'</div>' for x in definitions)
-      else:
+        note['fields'][CONFIG["WORD_BACK_FIELD"]] = ''.join(f'<div class="definition"><p>{x[1]}</p>{x[0]}</div>' for x in definitions)
+      elif CONFIG["TRANSLATE_WORDS"]: # add flag later
         t = (word, TRANSLATOR.translate(word, from_=lang))
         translations.append(t)
         note['fields'][CONFIG["WORD_BACK_FIELD"]] = f'<div class="definition">{t[1]}</div>'
+      else:
+        continue
     else:
       t = (word, TRANSLATOR.translate(word, from_=lang))
       translations.append(t)
       note['fields'][CONFIG["WORD_BACK_FIELD"]] = f'<div class="definition">{t[1]}</div>'
     notes.append(note)
+  print("")
   from_to = f"{lang}{CONFIG['TO_LANG']}"
   translations = [(x,t) for x,t in translations 
                   if t!="No translation available"]
   TRANSLATOR.update_previous_translations(
     dict(translations),from_to)
+  print("Adding cards to Anki...")
   ids = anki_connect.invoke("addNotes", notes=notes)
+  print("Cards added!")
 
 # exports all notes from study books as question-answer cards
 def export_study(device):
@@ -578,51 +586,8 @@ def add_words(words, to_, lang, from_=None):
   ids = []
   left_out_words = words
   amount_words = 0
-  if len(words)>0:
-    ids = []
-    query_words = ''.join(f'"deck:{from_}" AND "{CONFIG["IMPORT_FIELD"]}:{word[0]}" AND "is:suspended" AND -"deck:{to_}"' + ' OR ' for word in words)[:-4]
-    
-    if not CONFIG.get("SKIP_REPEATS_CHECK"):
-      ids = anki_connect.invoke("findCards", query=query_words)
-    
-    repeats = []
-    if len(ids) > 0:
-      imported_words = anki_connect.invoke("cardsInfo", cards=ids)
-      imported_words = [x['fields'][CONFIG["IMPORT_FIELD"]]['value'] for x in imported_words]
-      amount_words+=len(imported_words)
-      print(f"imported words from anki: {imported_words}")
-      left_out_words = [item for item in words if item[0] not in imported_words]
-      anki_connect.invoke("changeDeck", cards=ids, deck=to_)
-      anki_connect.invoke("unsuspend", cards=ids)
-    else:
-      print("Couldn't find any word to import from anki, gonna try to generate from dicts")
-    if left_out_words:
-      repeat_ids = []
-      
-      query_words = ''.join(f'"deck:{CONFIG["MAIN_DECK"]}" AND "{CONFIG["IMPORT_FIELD"]}:{word[0]}" AND -"is:suspended" OR "deck:{CONFIG["MAIN_DECK"]}" AND "{CONFIG["WORD_FRONT_FIELD"]}:{word[0]}" AND -"is:suspended"' + ' OR ' for word in left_out_words)[:-4]
-      if not CONFIG.get("SKIP_REPEATS_CHECK"):
-        repeat_ids = anki_connect.invoke("findCards", query=query_words)
-      repeats = anki_connect.invoke("cardsInfo", cards=repeat_ids)
-      #repeats = [x['fields'][IMPORT_FIELD]['value'] for x in repeats]
-      
-      reps = []
-      for card in repeats:
-        imp = card['fields'].get(CONFIG["IMPORT_FIELD"])
-        gen = card['fields'].get(CONFIG["WORD_FRONT_FIELD"])
-        if gen:
-          reps.append(gen['value'])
-        if imp:
-          reps.append(imp['value'])
-      repeats = reps
-      if repeats:
-        print(f"avoided generating repeating words: {repeats}")
-      left_out_words = [item for item in left_out_words if item[0] not in repeats]
-      
-      
-      if left_out_words:
-        print(f"generating words: {[x[0] for x in left_out_words]}")
-      else:
-        print("Skipping generating, words were already added previously...")
+  if CONFIG["VERBOSE"]:
+    print(f"generating words: {[x[0] for x in left_out_words]}")
   
   len_words = len(words)
   if left_out_words:
@@ -630,7 +595,7 @@ def add_words(words, to_, lang, from_=None):
   amount_words+=len(left_out_words)
   len_words = amount_words
   
-  print(f"Got {len_words} words...")
+  #print(f"Got {len_words} words...")
   return len_words
 
 # logic of adding notes to anki decks
@@ -639,6 +604,10 @@ def add_notes(notes, to_):
   if len(notes)>0:
     fields = anki_connect.invoke("modelFieldNames", modelName=CONFIG["NOTE_MODEL_NAME"])
     ids = []
+
+    if CONFIG["DEVICE"] in ["json", "ebooks", "csv/list"]:
+      to_ = "".join(f"{x}::" for x in to_.split("::")[:-2]) + "ebooks::"
+      print(to_)
     note_blueprint = {"deckName": to_,
                     "modelName": CONFIG["NOTE_MODEL_NAME"],
                     'fields': {x:'' for x in fields},
@@ -647,12 +616,16 @@ def add_notes(notes, to_):
                         "duplicateScope": "deck",
                     },
                     }
+    decks = []
     for i, note1 in enumerate(notes.copy()):
       note = copy.deepcopy(note_blueprint)
+      if CONFIG["DEVICE"] in ["json", "ebooks", "csv/list"]:
+        note["deckName"] = to_+note1[2]
+        decks.append(note["deckName"])
       note['fields'][CONFIG["NOTE_FRONT_FIELD"]] = note1[0]
       note['fields'][CONFIG["NOTE_BACK_FIELD"]] = note1[1]
       notes[i] = note
-    
+    [anki_connect.invoke("createDeck", deck=x) for x in decks]
     ids = anki_connect.invoke("addNotes", notes=notes)
   if not ids:
     ids = []
