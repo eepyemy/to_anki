@@ -225,13 +225,13 @@ def user_friendly_setup(first_setup=False, save=True):
   
   anki_custom_setup=[
     inquirer.Text("MAIN_DECK", "Main deck name (default:Language Learning)","Language Learning"),
-    inquirer.Text("IMPORT_WORDS_TO", "Words deck name(default:Words_Reading)","Words_Reading"),
+    inquirer.Text("IMPORT_WORDS_TO", "Words deck name(default:Words_Reading)","Words"),
     inquirer.Text("WORD_MODEL_NAME", "Anki model name for words cards(default:Anki Learn words)","Anki Learn words"),
     inquirer.Text("WORD_FRONT_FIELD", "Front field name for words cards(default:Word)","Word"),
     inquirer.Text("WORD_BACK_FIELD", "Back field name for words cards(default:Definitions)","Definitions"),
     
     
-    inquirer.Text("IMPORT_NOTES_TO", "Sentences deck name(default:Notes_Reading)","Notes_Reading"),
+    inquirer.Text("IMPORT_NOTES_TO", "Sentences deck name(default:Notes_Reading)","Notes"),
     inquirer.Text("NOTE_MODEL_NAME", "Anki model name for sentences cards(default:Anki Learn sentences)","Anki Learn sentences"),
     inquirer.Text("NOTE_FRONT_FIELD", "Front field name for sentences cards(default:Question)","Question"),
     inquirer.Text("NOTE_BACK_FIELD", "Back field name for sentences cards(default:Answer)","Answer"),
