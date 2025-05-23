@@ -24,9 +24,9 @@ For user friendly initial setup run `setup` file, follow instructions and choose
 
 It will automatically create `dict/{LANG}` folders after setup, put there any dictionary you want to be used for the specific source language (language you are trying to learn)
 
-After the settings are saved and you no longer want to modify them every time, you can run `export` file, which will skip the initial setup and will use the previously saved settings.
+After the settings are saved and you no longer want to modify them every time, you can run `to_anki` file, which will skip the initial setup and will use the previously saved settings.
 
-[Optional] Can be used as CLI, use `export --help` for more info.
+[Optional] Can be used as CLI, use `to_anki --help` for more info.
 
 ## What each device mode do
 
