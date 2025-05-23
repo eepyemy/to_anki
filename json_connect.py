@@ -87,7 +87,7 @@ class Json:
 
 
     # get words that are older than form_date
-    words = [(x.lower(),self.CONFIG["FILENAME"]) for x in all_words]
+    words = [(x.lower(),os.path.basename(JSON_FILENAME)) for x in all_words]
     dates = [datetime.now().timestamp() for x in all_words]
     
     if len(words)==0:
@@ -111,7 +111,7 @@ class Json:
     
 
     dates = [datetime.now().timestamp() for x in all_notes]
-    all_notes = [(x, "", self.CONFIG["FILENAME"]) for x in all_notes]
+    all_notes = [(x, "", os.path.basename(JSON_FILENAME)) for x in all_notes]
     
     if len(all_notes)==0:
       return [],[]
