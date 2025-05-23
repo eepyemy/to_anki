@@ -38,7 +38,7 @@ class Kobo:
 
   def __has_needed_data(self, scope="all"):
     result = False
-    db_path = os.path.join(os.getcwd(), "KoboReader.sqlite")
+    db_path = os.path.join(f"{os.getcwd()}/settings", "KoboReader.sqlite")
     if scope == "all":
       result = os.path.exists(db_path)
     return result
@@ -51,10 +51,10 @@ class Kobo:
     if config is not None:
       self.CONFIG=config
     else:
-      with open("PROPERTIES.env", "r", encoding="utf-8") as f:
+      with open("settings/PROPERTIES.env", "r", encoding="utf-8") as f:
         self.CONFIG = {x.split("=")[0]:x.split("=")[1].strip("\n") for x in f.readlines() if '=' in x and x.strip("\n")[-1]!="="}
     self.__is_connected = False
-    self.__backup_db(os.path.join(os.getcwd(),"KoboReader.sqlite"))
+    self.__backup_db(os.path.join(f"{os.getcwd()}/settings","KoboReader.sqlite"))
 
   def close(self):
     if self.__is_connected:
@@ -64,7 +64,7 @@ class Kobo:
   def connect(self):
     if self.__has_needed_data():
       self.__is_connected = True
-      self.__con = sqlite3.connect('KoboReader.sqlite')
+      self.__con = sqlite3.connect('settings/KoboReader.sqlite')
       self.cur = self.__con.cursor()
     else:
       print("can't connect to KoboReader.sqlite, no such file in working direcrtory")

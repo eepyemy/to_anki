@@ -108,14 +108,14 @@ class Koreader:
       for datatype, path in list(paths.items())[::-1]:
         if path:
           print("found path...")
-          to_file = os.path.join(dst, os.path.basename(path))
+          to_file = os.path.join(f"{dst}/settings", os.path.basename(path))
           print(f"coppying from {path}")
           if datatype == "notes":
-            shutil.copyfile(path, NOTES_FILENAME)
+            shutil.copyfile(path, f"settings/{NOTES_FILENAME}")
             continue
           if datatype == "dicts":
             shutil.copytree(path, "dicts", dirs_exist_ok=True)
-            continue  
+            continue
           shutil.copyfile(path, to_file)
           #time.sleep(10)
       connect = self.connect()
@@ -126,12 +126,12 @@ class Koreader:
   # checks if there is all data that is needed
   def __has_needed_data(self, scope="all"):
     result = False
-    vocab_path = os.path.join(os.getcwd(), VOCAB_FILENAME)
-    notes_path = os.path.join(os.getcwd(), NOTES_FILENAME)
-    books_info_path = os.path.join(os.getcwd(), BOOKS_INFO_FILENAME)
-    settings_path = os.path.join(os.getcwd(), SETTINGS_FILENAME)
+    vocab_path = os.path.join(f"{os.getcwd()}/settings", VOCAB_FILENAME)
+    notes_path = os.path.join(f"{os.getcwd()}/settings", NOTES_FILENAME)
+    books_info_path = os.path.join(f"{os.getcwd()}/settings", BOOKS_INFO_FILENAME)
+    settings_path = os.path.join(f"{os.getcwd()}/settings", SETTINGS_FILENAME)
     if scope == "all":
-      result = os.path.exists(vocab_path) and os.path.exists(notes_path) and os.path.join(os.getcwd(), BOOKS_INFO_FILENAME)
+      result = os.path.exists(vocab_path) and os.path.exists(notes_path) and os.path.join(f"{os.getcwd()}/settings", BOOKS_INFO_FILENAME)
     elif scope == "vocab":
       result = os.path.exists(vocab_path)
     elif scope == "notes":
@@ -148,7 +148,7 @@ class Koreader:
     if config is not None:
       self.CONFIG=config
     else:
-      with open("PROPERTIES.env", "r", encoding="utf-8") as f:
+      with open("settings/PROPERTIES.env", "r", encoding="utf-8") as f:
         self.CONFIG = {x.split("=")[0]:x.split("=")[1].strip("\n") for x in f.readlines() if '=' in x and x.strip("\n")[-1]!="="}
     self.__is_connected = False
     self.__notes_data = []
@@ -158,7 +158,7 @@ class Koreader:
     self.books = {}
     
     if self.__has_needed_data(scope="books_info"):
-      books_info = sqlite3.connect(BOOKS_INFO_FILENAME)
+      books_info = sqlite3.connect(f"settings/{BOOKS_INFO_FILENAME}")
       books = books_info.cursor().execute("SELECT directory, title FROM bookinfo")
       self.books = {x[1]:x[0] for x in books}
       books_info.close()
@@ -168,13 +168,13 @@ class Koreader:
     failed = False
     if self.__has_needed_data(scope="vocab"):
       self.__is_connected = True
-      self.__con = sqlite3.connect(VOCAB_FILENAME)
+      self.__con = sqlite3.connect(f"settings/{VOCAB_FILENAME}")
       self.cur = self.__con.cursor()
     else:
       print("[vocabulary_builder.sqlite3] failed to backup data, cant connect")
     if self.__has_needed_data(scope="notes"):
       try:
-        with open(NOTES_FILENAME, "r", encoding="utf-8") as f:
+        with open(f"settings/{NOTES_FILENAME}", "r", encoding="utf-8") as f:
           self.__notes_data = json.load(f)
 
       except:
@@ -206,7 +206,7 @@ class Koreader:
   # get dict order from koreader
   def get_dict_order(self):
     if self.__has_needed_data(scope="settings"):
-      data = luadata.read(os.path.join(os.getcwd(), SETTINGS_FILENAME))
+      data = luadata.read(os.path.join(f"{os.getcwd()}/settings", SETTINGS_FILENAME))
       if data:
         order = data.get("dicts_order", {})
         if not order:
