@@ -1,5 +1,7 @@
 # to_anki
 
+
+![til](./assets/anki.gif)
 An app that: 
 * aids mass creation of anki cards from saved words and sentences for language learning or general purpose studying
 * can create anki decks from books and texts
