@@ -13,7 +13,7 @@ def get_lemmas(text, lang=None):
   lemmas = [x for x in lemma_iterator(text, lang)]
   return lemmas
 
-EBOOKS_DIR="ebooks/"
+EBOOKS_DIR="ebooks"
 #shutil.copyfile(src, dst)
 
 class Ebooks:
@@ -65,7 +65,7 @@ class Ebooks:
 		if self.__has_needed_data(scope="all"):
 			
 			try:
-				langs = glob("ebooks/*")
+				langs = glob(f"{EBOOKS_DIR}{os.sep}*")
 				langs = [os.path.basename(x) for x in langs if os.path.isdir(x)]
 				self.__data = {}
 				self.__is_connected = True
@@ -89,9 +89,13 @@ class Ebooks:
 	def __query(self, lang, type):
 		if self.__is_connected:
 			if lang not in self.__data:
-				print(f"\nChecking the books for {lang} language...")
+				print(f"\n[{os.path.basename(EBOOKS_DIR)}]Checking the books for {lang} language...")
 				self.__data[lang] = []
-				ebooks = glob(f"ebooks/{lang}/*.*")
+				if os.path.isdir(EBOOKS_DIR):
+					ebooks = glob(f"{EBOOKS_DIR}{os.sep}{lang}{os.sep}*.*")
+				else:
+					ebooks = [EBOOKS_DIR] # in case its one book
+					
 				for ind, ebook in enumerate(ebooks):
 					ebook_name = os.path.splitext(os.path.basename(ebook))[0]
 					print(f"({ind+1}/{len(ebooks)}) Extracting words from {ebook_name}...")
