@@ -116,7 +116,7 @@ CONFIG={}
 if not os.path.exists("PROPERTIES.env"):
 	print("PROPERTIES.env is not there, creating default one...")
 	with open("PROPERTIES.env", "w", encoding="utf-8") as f:
-		f.write("//[optional] api key for DeepL translator, Google used by default\nDEEP_L_AUTH_KEY=\nUSE_DEEPL=False\n\n//choose between koreader and kobo\nDEVICE=koreader\n\n//[optional]cloud directory on your pc\nCLOUD_DIR=\n\n//name of the anki deck where all imported data will be stored\nMAIN_DECK=Language Learning\n\n//[optional] specify the full name of anki deck, you want this program to import cards from. you can add more lines following the same naming pattern for other languages you are learning. \nEN_IMPORT_FROM=\nNL_IMPORT_FROM=\n\n[optional] name of the field where the word is being stored in your {lang}_IMPORT_FROM deck.\nIMPORT_FIELD=Word\n\n//name of the deck for imported words from koreader\nIMPORT_WORDS_TO=Words\n\n//name of the deck for imported notes from koreader\nIMPORT_NOTES_TO=Notes\n\n//name of the deck for imported study questions from koreader\nIMPORT_STUDY_TO=Study\n\n//language to which you want things to be translated. change to your native language\nTO_LANG=EN\n\n//Marker folders in koreader, that will signal that a book in that folder has a purpose of learning particular language or just study folder. List all such folders for every lang you are willing to import using ,(comma)\n\nEN=\nNL=\nSTUDY=Study\n\n//Names of the anki cards models for words and for notes, change if using non default anki model\n\nNOTE_MODEL_NAME=Anki Learn sentences\nWORD_MODEL_NAME=Anki Learn words\nSTUDY_MODEL_NAME=Anki Learn sentences\n\n//Names of the anki cards front and back fields for words, notes and study cards, change if using non default anki model\n\nNOTE_FRONT_FIELD=Question\nNOTE_BACK_FIELD=Answer\n\nWORD_FRONT_FIELD=Word\nWORD_BACK_FIELD=Definitions\n\nSTUDY_FRONT_FIELD=Question\nSTUDY_BACK_FIELD=Answer\n\n")
+		f.write("//[optional] api key for DeepL translator, Google used by default\nDEEP_L_AUTH_KEY=\nUSE_DEEPL=False\n\n//choose between koreader and kobo\TYPE=koreader\n\n//[optional]cloud directory on your pc\nCLOUD_DIR=\n\n//name of the anki deck where all imported data will be stored\nMAIN_DECK=Language Learning\n\n//[optional] specify the full name of anki deck, you want this program to import cards from. you can add more lines following the same naming pattern for other languages you are learning. \nEN_IMPORT_FROM=\nNL_IMPORT_FROM=\n\n[optional] name of the field where the word is being stored in your {lang}_IMPORT_FROM deck.\nIMPORT_FIELD=Word\n\n//name of the deck for imported words from koreader\nIMPORT_WORDS_TO=Words\n\n//name of the deck for imported notes from koreader\nIMPORT_NOTES_TO=Notes\n\n//name of the deck for imported study questions from koreader\nIMPORT_STUDY_TO=Study\n\n//language to which you want things to be translated. change to your native language\nTO_LANG=EN\n\n//Marker folders in koreader, that will signal that a book in that folder has a purpose of learning particular language or just study folder. List all such folders for every lang you are willing to import using ,(comma)\n\nEN=\nNL=\nSTUDY=Study\n\n//Names of the anki cards models for words and for notes, change if using non default anki model\n\nNOTE_MODEL_NAME=Anki Learn sentences\nWORD_MODEL_NAME=Anki Learn words\nSTUDY_MODEL_NAME=Anki Learn sentences\n\n//Names of the anki cards front and back fields for words, notes and study cards, change if using non default anki model\n\nNOTE_FRONT_FIELD=Question\nNOTE_BACK_FIELD=Answer\n\nWORD_FRONT_FIELD=Word\nWORD_BACK_FIELD=Definitions\n\nSTUDY_FRONT_FIELD=Question\nSTUDY_BACK_FIELD=Answer\n\n")
 
 with open("PROPERTIES.env", "r", encoding="utf-8") as f:
 	CONFIG = {x.split("=")[0]:x.split("=")[1].strip("\n") for x in f.readlines() if '=' in 
@@ -187,7 +187,7 @@ def check_reqs(list_params, raise_error=True):
 			result = False
 	return result
 
-def load_dicts_ordered(device):
+def load_dicts_ordered(type):
 	if not os.path.exists("custom_dicts_order.txt"):
 		with open("custom_dicts_order.txt", "w", encoding="utf-8") as f:
 			f.writelines([f"{os.path.basename(x)}\n" 
@@ -215,7 +215,7 @@ def load_dicts_ordered(device):
 	#print(dicts)
 	dicts = {x:Dictionary(x[:-4]) 
 										 for x in CONFIG["DICT_PATHS"]}
-	dicts_order = device.get_dict_order()
+	dicts_order = type.get_dict_order()
 	dicts_order = {os.path.basename(x):y 
 								 for x,y in dicts_order.items()}
 	dicts_order.update(custom_dicts_order)

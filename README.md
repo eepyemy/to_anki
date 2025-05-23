@@ -26,9 +26,11 @@ It will automatically create `dict/{LANG}` folders after setup, put there any di
 
 After the settings are saved and you no longer want to modify them every time, you can run `to_anki` file, which will skip the initial setup and will use the previously saved settings.
 
+Additionally, you can drag and drop files onto `ebooks_to_anki`,`list_to_anki` and `json_to_anki` files. It will use all saved settings in previous setup step, but will use that file for words/notes extraction instead and change mode to the apporpriate according to cmd you're drag and dropping into. 
+
 [Optional] Can be used as CLI, use `to_anki --help` for more info.
 
-## What each device mode do
+## What each mode do
 
 ### koreader
 the program will look if there is a koreader device connected to pc (works with kobo, but doesnt with Android)
@@ -43,16 +45,16 @@ It will also sync all of the dictionaries that your koreader folder has and use 
 
 ### kobo (poorly supported)
 
-Program checks if kobo is connected and if it is, program looks for sentences and words that were saved during reading and translates them into anki cards. 
+It checks if kobo is connected and if it is, program looks for sentences and words that were saved during reading and translates them into anki cards. 
 
 ### ebooks
 
-The program looksup for books in `ebooks/{LANG}` directory. It supports `.epub` and `.txt` formats.
+It looks for books in `ebooks/{LANG}` directory by default. It supports `.epub` and `.txt` formats.
 Then it creates an anki deck for each book using most frequent words, aiming to give user the words needed to be able to understand `95%` of the text. (the nuber can be changed via `COVERAGE` parameter or during the setup)
 
 ### csv/list
 
-The program will read the csv or txt file for words and sentences. It will bulk create anki decks for languages selected. Default structure of the file is like this. 
+It will read the csv or txt file for words and sentences. It will bulk create anki decks for languages selected. Default structure of the file is like this. 
 
 ```csv
 hello,EN
@@ -70,7 +72,7 @@ awesome
 ```
 
 ### json
-The program will read the json file for words and sentences. It will bulk create anki decks for languages selected. Default structure of the file is like this.
+It will read the json file for words and sentences. It will bulk create anki decks for languages selected. Default structure of the file is like this.
 
 ```json
 {
