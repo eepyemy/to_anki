@@ -43,7 +43,7 @@ def main(
   download_dicts : bool = CONFIG.get("TRY_DOWNLOAD", 'False') == 'True', 
   use_deepl:bool = CONFIG.get("USE_DEEPL", 'True') == 'True',
   use_dicts:bool = CONFIG.get("USE_DICTS", 'True') == 'True',
-  setup:bool = False,
+  setup:bool = CONFIG.get("SETUP", 'True')=='True',
   include_learned:bool = CONFIG.get("INCLUDE_LEARNED", 'False') == 'True',
   translate_words:bool = CONFIG.get("TRANSLATE_WORDS",'False') == 'True',
   verbose:bool = CONFIG.get("VERBOSE", "False") == 'True'
@@ -86,8 +86,10 @@ def main(
   #CONFIG["SUPPORTED_LANGS"] = dict(sorted(list(set(langs.items())), key=lambda x: x[1])) 
   #print(CONFIG["FROM_LANGS"])
   
-  if setup or CONFIG.get("WAS_SETUP","False")=="False":
-    user_friendly_setup(save=CONFIG.get("WAS_SETUP","False"))
+  if setup:
+    first_time = "SETUP" not in CONFIG
+    # CONFIG["SETUP"] = setup
+    user_friendly_setup(first_setup=first_time)
     type = CONFIG.get("DEVICE", type)
 
   
@@ -185,7 +187,7 @@ def get_lang_name(code):
   return result
 
 # TODO migrate it to init.py
-def user_friendly_setup(first_setup=False, save=True):
+def user_friendly_setup(first_setup=False):
   global CONFIG
   def update(a,b,vals_to_ignore=["", None]):
     a.update((k,v) for k,v in b.items() if v not in vals_to_ignore)
@@ -247,7 +249,7 @@ def user_friendly_setup(first_setup=False, save=True):
   ]
   
   if first_setup:
-    save = True
+    CONFIG["SETUP"] = False
     
   answers = update({}, prompt(basic_setup))
   custom_langs = {}
@@ -330,13 +332,12 @@ def user_friendly_setup(first_setup=False, save=True):
   
   CONFIG.update(answers)
   #print(CONFIG)
-  do_save = list_input("Do you want to save the settings?",choices=[ ("No", False),("Yes", True)], default=True if save=="False" else False)
+  do_save = list_input("Do you want to save the settings?",choices=[ ("No", False),("Yes", True)], default=True if first_setup else False)
   if do_save:
     to_save = CONFIG.copy()
     if not to_save.get("CUSTOM_LANGS",{}):
       to_save.pop("CUSTOM_LANGS",None)
     to_save.pop("TRY_DOWNLOAD",None)
-    to_save.pop("WAS_SETUP",None)
     to_save.pop("DICT_PATHS",None)
     to_save.pop("SUPPORTED_LANGS",None)
     to_save.pop("TRANSLATOR",None)
@@ -349,8 +350,6 @@ def user_friendly_setup(first_setup=False, save=True):
     with open("PROPERTIES.env", "w", encoding="utf-8") as f:
       for k,v in to_save.items():
         f.write(f"\n{k}={v}")
-      f.write("\nWAS_SETUP=True")
-    to_save["WAS_SETUP"] = True  
     print("Saved the following data to PROPERTIES.env :")
     print(to_save)
     # TODO think of a better structure for setup
