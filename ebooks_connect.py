@@ -95,6 +95,10 @@ class Ebooks:
 					ebooks = glob(f"{EBOOKS_DIR}{os.sep}{lang}{os.sep}*.*")
 				else:
 					ebooks = [EBOOKS_DIR] # in case its one book
+					first_lang = list(self.CONFIG["FROM_LANGS"].keys())[0].replace("_", "-").strip("-").upper()
+					if lang.replace("_", "-").strip("-").upper() != first_lang:
+						return []
+
 					
 				for ind, ebook in enumerate(ebooks):
 					ebook_name = os.path.splitext(os.path.basename(ebook))[0]
