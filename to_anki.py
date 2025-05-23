@@ -29,7 +29,7 @@ TOTAL=0
 
 @app.command()
 def main(
-  type: str = CONFIG.get("DEVICE", None), 
+  type: str = CONFIG.get("TYPE", None), 
   filename: str = None, 
   from_langs: str = "".join(f"{x} " for x in list(CONFIG["FROM_LANGS"].keys()))[:-1], 
   to_lang:str = CONFIG['TO_LANG'], 
@@ -90,7 +90,7 @@ def main(
     first_time = "SETUP" not in CONFIG
     # CONFIG["SETUP"] = setup
     user_friendly_setup(first_setup=first_time)
-    type = CONFIG.get("DEVICE", type)
+    type = CONFIG.get("TYPE", type)
 
   
   folder_langs = [x.replace("_", "-").strip("-").split("-")[0].upper() for x in CONFIG["FROM_LANGS"]]
@@ -107,32 +107,32 @@ def main(
   #print(TRANSLATOR.translate("Hello my name is Emy", "EN", "NL"))
   
   
-  # setting device
-  device = None
-  if "DEVICE" not in CONFIG and type==None:
-    print("Aborting, DEVICE propertiy is not set")
+  # setting type class
+  type_instance = None
+  if "TYPE" not in CONFIG and type==None:
+    print("Aborting, TYPE propertiy is not set")
     return None
   if type == "koreader":
-    device = koreader_connect.Koreader(download_dicts=CONFIG["TRY_DOWNLOAD"], config=CONFIG)
+    type_instance = koreader_connect.Koreader(download_dicts=CONFIG["TRY_DOWNLOAD"], config=CONFIG)
   elif type == "kobo":
-    device = kobo_connect.Kobo(config=CONFIG)
+    type_instance = kobo_connect.Kobo(config=CONFIG)
   elif type == "json":
-    device = json_connect.Json(config=CONFIG)
+    type_instance = json_connect.Json(config=CONFIG)
   elif type == "csv/list":
-    device = csv_connect.Csv(config=CONFIG)
+    type_instance = csv_connect.Csv(config=CONFIG)
   elif type == "ebooks":
-    device = ebooks_connect.Ebooks(config=CONFIG)
+    type_instance = ebooks_connect.Ebooks(config=CONFIG)
   
-  print(device)
-  if not device:
-    print("Device is not connected")
+  print(type_instance)
+  if not type_instance:
+    print("Could not connect to given TYPE.")
   
   if not CONFIG["FROM_LANGS"]:
     print("No language properties are set, need at least one language. Aborting")
     return None
 
   # preparing dicts
-  DICTS = load_dicts_ordered(device)
+  DICTS = load_dicts_ordered(type_instance)
   #print(DICTS)
   #print(CONFIG["SUPPORTED_LANGS"])
   
@@ -143,7 +143,7 @@ def main(
     print()
     print(f"Exporting from {get_lang_name(lang)} language...")
     print()
-    export_lang(device, lang)
+    export_lang(type_instance, lang)
   
   sync_dates = get_sync_dates()
   # generating study cards
@@ -151,7 +151,7 @@ def main(
   print(f"Exporting study questions...")
   print()
   
-  sync_dates.extend(export_study(device))
+  sync_dates.extend(export_study(type_instance))
   
   # drop ununique dates
   sync_dates = list(set(sync_dates))
@@ -200,9 +200,9 @@ def user_friendly_setup(first_setup=False):
   
   basic_setup = [
     inquirer.List(
-      "DEVICE","Select default device for export of notes",choices=["koreader", "kobo", "ebooks", "csv/list", "json"]
+      "TYPE","Select default mode for export of notes",choices=["koreader", "kobo", "ebooks", "csv/list", "json"]
     ),
-    inquirer.Text("FILENAME","Enter filename to export words and sentences from",ignore=lambda x:x["DEVICE"] not in ["csv/list", "json"], default=""),
+    inquirer.Text("FILENAME","Enter filename to export words and sentences from",ignore=lambda x:x["TYPE"] not in ["csv/list", "json"], default=""),
     inquirer.List("USUAL_CASE","Do you use languages that are not supported by common translators?",[("Yes",True),("No", False)],False),
     inquirer.Text("CUSTOM_LANGS","(optional) Enter custom language codes and their names via colon, separating each new pair with a comma",ignore=lambda x: not x["USUAL_CASE"], default="")]
   
@@ -283,13 +283,13 @@ def user_friendly_setup(first_setup=False):
   print(answers)
   #x.replace("_", "-").strip("-").split("-")[0]
   koreader_specific = [inquirer.Text(x.replace("_", "-").strip("-").split("-")[0].upper()
-  ,f"Enter comma separated folder names form KOreader for books in {codes[x]} language",ignore=lambda _: answers["DEVICE"]!="koreader", default="") for x in answers["FROM_LANGS"]]
+  ,f"Enter comma separated folder names form KOreader for books in {codes[x]} language",ignore=lambda _: answers["TYPE"]!="koreader", default="") for x in answers["FROM_LANGS"]]
 
-  koreader_specific.append(inquirer.Text("STUDY", f"Enter comma separated folder names form KOreader for books that you study: ",ignore=lambda _: answers["DEVICE"]!="koreader", default=""))
+  koreader_specific.append(inquirer.Text("STUDY", f"Enter comma separated folder names form KOreader for books that you study: ",ignore=lambda _: answers["TYPE"]!="koreader", default=""))
   
-  include_learned = [inquirer.List("INCLUDE_LEARNED", message=f"Do you want to include already learned words in the deck?", choices=[("Yes", True), ("No", False)], ignore=lambda _: answers["DEVICE"]not in ["ebooks", "csv/list", "json"])]
+  include_learned = [inquirer.List("INCLUDE_LEARNED", message=f"Do you want to include already learned words in the deck?", choices=[("Yes", True), ("No", False)], ignore=lambda _: answers["TYPE"]not in ["ebooks", "csv/list", "json"])]
 
-  coverage = [inquirer.Text("COVERAGE", message=f"Please enter the percentage of text you aim to be able to understand: ", ignore=lambda _: answers["DEVICE"]not in ["ebooks"], default="95")]
+  coverage = [inquirer.Text("COVERAGE", message=f"Please enter the percentage of text you aim to be able to understand: ", ignore=lambda _: answers["TYPE"]not in ["ebooks"], default="95")]
 
   answers = update(answers, prompt(koreader_specific))
   answers = update(answers, prompt(include_learned))
@@ -414,19 +414,19 @@ def generate_cards(words, lang, import_words_to):
   print("Cards added!")
 
 # exports all notes from study books as question-answer cards
-def export_study(device):
+def export_study(type_instance):
   sync_dates = []
   if not check_reqs(["STUDY_FRONT_FIELD", "STUDY_BACK_FIELD", "STUDY_MODEL_NAME"], raise_error=False):
     return []
 
-  if type(device).__name__ != "Koreader" or "STUDY" not in CONFIG:
+  if type(type_instance).__name__ != "Koreader" or "STUDY" not in CONFIG:
     return []
   
-  device.connect()
+  type_instance.connect()
 
   print(f"syncing all study questions...")
   
-  notes,notes_dates = device.get_notes("STUDY")
+  notes,notes_dates = type_instance.get_notes("STUDY")
   notes,notes_dates = get_new_items(notes, notes_dates)
   
   notes = [[x[1], x[0], x[2]] for x in notes if x[1] != None and x[1].strip() != '']
@@ -463,7 +463,7 @@ def export_study(device):
     notes_dates = [ms_to_str(x) for x in notes_dates]
     sync_dates.extend(notes_dates)
     
-    device.close()
+    type_instance.close()
 
     with open("history.txt", "a") as f:
       if ids:
@@ -471,7 +471,7 @@ def export_study(device):
   return sync_dates
 
 # exports all words and notes for specific language
-def export_lang(device, lang):
+def export_lang(type_instance, lang):
   global BATCH, TOTAL
   TOTAL = 0
   BATCH = 0
@@ -479,7 +479,7 @@ def export_lang(device, lang):
   
   sync_dates = []
 
-  device.connect()
+  type_instance.connect()
   FROM_LANG=lang
   
   IMPORT_WORDS_FROM = CONFIG["FROM_LANGS"][lang]
@@ -494,7 +494,7 @@ def export_lang(device, lang):
   
 
   print(f"syncing all words...")
-  words, words_dates = device.get_words(FROM_LANG)
+  words, words_dates = type_instance.get_words(FROM_LANG)
   words, words_dates = get_new_items(words, words_dates)
   
   if not CONFIG["INCLUDE_LEARNED"]:
@@ -508,12 +508,12 @@ def export_lang(device, lang):
     words_dates = [x[1] for x in ziped]
   
   print(f"syncing all notes...")
-  notes, notes_dates = device.get_notes(FROM_LANG)
+  notes, notes_dates = type_instance.get_notes(FROM_LANG)
   notes, notes_dates = get_new_items(notes, notes_dates)
-  device.close()
+  type_instance.close()
   
-  is_skip_sync = (isinstance(device, csv_connect.Csv) 
-               or isinstance(device, json_connect.Json)) 
+  is_skip_sync = (isinstance(type_instance, csv_connect.Csv) 
+               or isinstance(type_instance, json_connect.Json)) 
   from_to = f"{lang}{CONFIG['TO_LANG']}"
 
   sync_dates = get_sync_dates()
@@ -606,7 +606,7 @@ def add_notes(notes, to_):
     fields = anki_connect.invoke("modelFieldNames", modelName=CONFIG["NOTE_MODEL_NAME"])
     ids = []
 
-    if CONFIG["DEVICE"] in ["json", "ebooks", "csv/list"]:
+    if CONFIG["TYPE"] in ["json", "ebooks", "csv/list"]:
       to_ = "".join(f"{x}::" for x in to_.split("::")[:-2]) + "ebooks::"
       print(to_)
     note_blueprint = {"deckName": to_,
@@ -620,7 +620,7 @@ def add_notes(notes, to_):
     decks = []
     for i, note1 in enumerate(notes.copy()):
       note = copy.deepcopy(note_blueprint)
-      if CONFIG["DEVICE"] in ["json", "ebooks", "csv/list"]:
+      if CONFIG["TYPE"] in ["json", "ebooks", "csv/list"]:
         note["deckName"] = to_+note1[2]
         decks.append(note["deckName"])
       note['fields'][CONFIG["NOTE_FRONT_FIELD"]] = note1[0]

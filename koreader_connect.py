@@ -21,7 +21,7 @@ class Koreader:
 
   # Looks for paths with db files
   # Check also dir from properties variable CLOUD_DIR if no kobo connected
-  def __get_paths_to_data(self, device_type="kobo", cloud_dir=None) -> dict:
+  def __get_paths_to_data(self, type="kobo", cloud_dir=None) -> dict:
     result = {"vocab":None, "notes":None, "books_info":None, "dicts":None, "settings":None}
     paths = []
     path = None
@@ -32,7 +32,7 @@ class Koreader:
         break
       mountpoint = part[1]
       
-      if device_type == "kobo":
+      if type == "kobo":
         path = os.path.join(mountpoint, ".adds")
       elif cloud_dir:
           print("going to cloud dir")
@@ -95,8 +95,8 @@ class Koreader:
   # copies db from path where it's located
   def __backup_data(self, dst, attempts=5):
     # priority and multiple path search, so it searches first for kobo path, and if there is none on phisical mounting points, let it search in the web
-    paths_kobo = self.__get_paths_to_data(device_type="kobo")
-    paths_cloud = self.__get_paths_to_data(device_type="cloud", cloud_dir=self.CONFIG.get("CLOUD_DIR")) 
+    paths_kobo = self.__get_paths_to_data(type="kobo")
+    paths_cloud = self.__get_paths_to_data(type="cloud", cloud_dir=self.CONFIG.get("CLOUD_DIR")) 
 
     if paths_kobo["vocab"] or paths_kobo["notes"]:
       paths = paths_kobo

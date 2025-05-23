@@ -43,7 +43,7 @@ class Kobo:
       result = os.path.exists(db_path)
     return result
 
-  # dummy func implementation of Device interface
+  # dummy func implementation of Type interface
   def get_dict_order(self):
     return {}    
   
