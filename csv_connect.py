@@ -69,11 +69,11 @@ class Csv:
       
       # normilize data and lang
       lang = lang.replace("_", "-").strip("-").upper()
-      if lang not in self.CONFIG["SUPPORTED_LANGS"]:
+      if lang not in self.CONFIG.get("SUPPORTED_LANGS",[]):
         lang = lang.split("-")[0]
       if isinstance(data, str):
         data = data.replace("_", "-").strip("-").upper()
-        if data not in self.CONFIG["SUPPORTED_LANGS"]:
+        if data not in self.CONFIG.get("SUPPORTED_LANGS",[]):
           data = data.split("-")[0]
         if (("-" in data and "-" not in lang)
             or ("-" in lang and "-" not in data)):
@@ -92,10 +92,10 @@ class Csv:
         
         result = [(x[mainf],(x[langf:langf+1] or [None])[0]) for x in self.__data if separator(x)]
         
-        count_langs = len(self.CONFIG["FROM_LANGS"])
+        first_lang = list(self.CONFIG["FROM_LANGS"].keys())[0].replace("_", "-").strip("-").upper()
         
         result = [(word,lang_) for word,lang_ in result
-                  if ((count_langs==1 and lang_ is None)
+                  if ((first_lang==lang and lang_ is None)
                       or lang_check_func(lang_))]
     return result
   
@@ -146,11 +146,8 @@ class Csv:
   
 # just for debug
 if __name__ == "__main__":
-  k = Csv()
+  k = Csv({"FILENAME":"this is a list.txt", "FROM_LANGS":{"NL":"","EN":""}})
   k.connect()
-  print(k.get_notes("RU"))
-  print(k.get_notes("ES"))
-  print(k.get_notes("Study"))
-  print(k.get_words("RU"))
-  print(k.get_words("ES"))
+  print(k.get_words("NL"))
+  print(k.get_notes("NL"))
   k.close()
