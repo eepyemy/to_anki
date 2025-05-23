@@ -52,7 +52,7 @@ def main(
   # intializing config variables
   global CONFIG, TRANSLATOR, DICTS
   #print(CONFIG["FROM_LANGS"])
-  
+  CONFIG["TYPE"] = type
   CONFIG["COVERAGE"] = coverage
   CONFIG["VERBOSE"] = verbose
   CONFIG["TRANSLATE_WORDS"] = translate_words
@@ -285,9 +285,9 @@ def user_friendly_setup(first_setup=False):
   koreader_specific = [inquirer.Text(x.replace("_", "-").strip("-").split("-")[0].upper()
   ,f"Enter comma separated folder names form KOreader for books in {codes[x]} language",ignore=lambda _: answers["TYPE"]!="koreader", default="") for x in answers["FROM_LANGS"]]
 
-  koreader_specific.append(inquirer.Text("STUDY", f"Enter comma separated folder names form KOreader for books that you study: ",ignore=lambda _: answers["TYPE"]!="koreader", default=""))
+  koreader_specific.append(inquirer.Text("STUDY", f"Enter comma separated folder names form KOreader for books that you study: ",ignore=lambda _: answers["TYPE"]!="koreader", default="Study"))
   
-  include_learned = [inquirer.List("INCLUDE_LEARNED", message=f"Do you want to include already learned words in the deck?", choices=[("Yes", True), ("No", False)], ignore=lambda _: answers["TYPE"]not in ["ebooks", "csv/list", "json"])]
+  include_learned = [inquirer.List("INCLUDE_LEARNED", message=f"Do you want to include already learned words in the deck?", choices=[("Yes", True), ("No", False)], ignore=lambda _: answers["TYPE"]not in ["ebooks", "csv/list", "json"], default=False)]
 
   coverage = [inquirer.Text("COVERAGE", message=f"Please enter the percentage of text you aim to be able to understand: ", ignore=lambda _: answers["TYPE"]not in ["ebooks"], default="95")]
 
@@ -551,8 +551,10 @@ def export_lang(type_instance, lang):
     note, note_date = pair
     notes_batch.append(note)
     notes_dates_batch.append(note_date)
-    if ind % int(CONFIG["BATCH_SIZE"]) or ind+1==len(notes):
-      print(f"{ind+1}/{len(notes)} Processing notes...")  
+    
+    print(f"{ind+1}/{len(notes)} Processing notes...",end="\r")
+    if ((ind+1) % int(CONFIG["BATCH_SIZE"]))==0 or ind+1==len(notes):
+      print("")
 
       # translation
       # list -> (note, translation)
@@ -578,9 +580,9 @@ def export_lang(type_instance, lang):
   
   with open("settings/history.txt", "a") as f:
     if len_sentences:
-      f.write(f"\n[{notes_dates[0]}][{lang}]: {len_sentences} sentences imported.")
+      f.write(f"\n[{ms_to_str(notes_dates[0])}][{lang}]: {len_sentences} sentences imported.")
     if len_words:
-      f.write(f"\n[{words_dates[0]}][{lang}]: {len_words} words imported.")
+      f.write(f"\n[{ms_to_str(words_dates[0])}][{lang}]: {len_words} words imported.")
 
 # logic of adding words to anki decks
 def add_words(words, to_, lang, from_=None):
@@ -608,7 +610,7 @@ def add_notes(notes, to_):
 
     if CONFIG["TYPE"] in ["json", "ebooks", "csv/list"]:
       to_ = "".join(f"{x}::" for x in to_.split("::")[:-2]) + "ebooks::"
-      print(to_)
+      #print(to_)
     note_blueprint = {"deckName": to_,
                     "modelName": CONFIG["NOTE_MODEL_NAME"],
                     'fields': {x:'' for x in fields},
