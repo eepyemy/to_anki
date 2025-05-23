@@ -53,8 +53,6 @@ def main(
   global CONFIG, TRANSLATOR, DICTS
   #print(CONFIG["FROM_LANGS"])
   
-  # !!! FOR DEBUG ONly, DELETE AFTER !!!
-  download_dicts = False
   CONFIG["COVERAGE"] = coverage
   CONFIG["VERBOSE"] = verbose
   CONFIG["TRANSLATE_WORDS"] = translate_words
