@@ -28,7 +28,7 @@ class Csv:
     if config is not None:
       self.CONFIG=config
     else:
-      with open("PROPERTIES.env", "r", encoding="utf-8") as f:
+      with open("settings/PROPERTIES.env", "r", encoding="utf-8") as f:
         self.CONFIG = {x.split("=")[0]:x.split("=")[1].strip("\n") for x in f.readlines() if '=' in x and x.strip("\n")[-1]!="="}
     CSV_FILENAME = config.get("FILENAME",CSV_FILENAME)
     self.__is_connected = False

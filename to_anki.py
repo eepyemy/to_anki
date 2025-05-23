@@ -157,7 +157,7 @@ def main(
   sync_dates = list(set(sync_dates))
   
   print("saving sync dates")
-  with open("sync_dates.json", "w", encoding="utf-8") as k:
+  with open("settings/sync_dates.json", "w", encoding="utf-8") as k:
     json.dump(sync_dates, k)
   
   TRANSLATOR.close()
@@ -347,7 +347,7 @@ def user_friendly_setup(first_setup=False):
     
     
     print("Saving newly made config...")
-    with open("PROPERTIES.env", "w", encoding="utf-8") as f:
+    with open("settings/PROPERTIES.env", "w", encoding="utf-8") as f:
       for k,v in to_save.items():
         f.write(f"\n{k}={v}")
     print("Saved the following data to PROPERTIES.env :")
@@ -465,7 +465,7 @@ def export_study(type_instance):
     
     type_instance.close()
 
-    with open("history.txt", "a") as f:
+    with open("settings/history.txt", "a") as f:
       if ids:
         f.write(f"\n[{sync_dates[0]}][STUDY]: {len(ids)} study questions imported.")
   return sync_dates
@@ -537,7 +537,7 @@ def export_lang(type_instance, lang):
       if not is_skip_sync:
         sync_dates.extend(words_dates_batch)
         sync_dates = list(set(sync_dates))
-        with open("sync_dates.json", "w", encoding="utf-8") as k:
+        with open("settings/sync_dates.json", "w", encoding="utf-8") as k:
           json.dump(sync_dates, k)
       result_words.append(words_batch)
       words_batch = []
@@ -564,7 +564,7 @@ def export_lang(type_instance, lang):
       if not is_skip_sync:
         sync_dates.extend(notes_dates_batch)
         sync_dates = list(set(sync_dates))
-        with open("sync_dates.json", "w", encoding="utf-8") as k:
+        with open("settings/sync_dates.json", "w", encoding="utf-8") as k:
           json.dump(sync_dates, k)
       result_notes.append(notes_batch)
       notes_batch = []
@@ -576,7 +576,7 @@ def export_lang(type_instance, lang):
     print("skipping sync dates...")
   
   
-  with open("history.txt", "a") as f:
+  with open("settings/history.txt", "a") as f:
     if len_sentences:
       f.write(f"\n[{notes_dates[0]}][{lang}]: {len_sentences} sentences imported.")
     if len_words:
@@ -636,7 +636,7 @@ def add_notes(notes, to_):
 def get_sync_dates():
   sync_dates = []
   try:
-    with open("sync_dates.json", "r", encoding="utf-8") as f:
+    with open("settings/sync_dates.json", "r", encoding="utf-8") as f:
       sync_dates = json.load(f)
   except:
     print("No file sync_dates.json....")

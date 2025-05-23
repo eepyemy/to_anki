@@ -136,18 +136,18 @@ class TranslatorsHandler:
     if config is not None:
       self.config=config
     else:
-      with open("PROPERTIES.env", "r", encoding="utf-8") as f:
+      with open("settings/PROPERTIES.env", "r", encoding="utf-8") as f:
         self.config = {x.split("=")[0]:x.split("=")[1].strip("\n") for x in f.readlines() if '=' in x and x.strip("\n")[-1]!="="}
   def update_previous_translations(self, pairs={},from_to="UNKNOWN"):
     try:
-      with open("translations.json", "r", encoding="utf-8") as f:
+      with open("settings/translations.json", "r", encoding="utf-8") as f:
         self.prev_translations = json.load(f) 
     except Exception as e:
       print("No file for prev translations, creating one...", e)
     if from_to not in self.prev_translations:
       self.prev_translations[from_to] = {}
     self.prev_translations[from_to].update(dict(pairs))
-    with open("translations.json", "w", encoding="utf-8") as f:
+    with open("settings/translations.json", "w", encoding="utf-8") as f:
       json.dump(self.prev_translations, f)
   
   def get_supported_langs(self, type="names"):
