@@ -11,8 +11,8 @@ An app that:
 * can be used as an export tool in combination with KOreader (takes a bit of tidious setup with Android unfortunately)
 
 ### Prerequisites
-* Anki up and running on your pc
-* AnkiConnect addon installed
+* [Anki](https://apps.ankiweb.net/#downloads) up and running on your pc
+* [AnkiConnect](https://ankiweb.net/shared/info/2055492159) addon installed
 * Just in case backup your Anki collection before proceding
 * (optional) install recommended anki card templates for better definitions rendering: [Download](https://github.com/eepyemy/anki_learn_templates/releases)
 * (optional) Find Stardict dictionaries you want to be used in the process of anki cards creation if the ones availabe on KOreader are not enough
