@@ -395,7 +395,7 @@ def generate_cards(words, lang, import_words_to):
       elif CONFIG["TRANSLATE_WORDS"]: # add flag later
         t = (word, TRANSLATOR.translate(word, from_=lang))
         translations.append(t)
-        note['fields'][CONFIG["WORD_BACK_FIELD"]] = f'<div class="definition">{t[1]}</div>'
+        note['fields'][CONFIG["WORD_BACK_FIELD"]] = f'<div class="definition"><p>Online translator</p>{t[1]}</div>'
       else:
         continue
     else:
